@@ -27248,30 +27248,32 @@ function requireCore () {
 var coreExports = requireCore();
 
 const apiBase = process$1.env.NEXUSMODS_API_BASE?.trim() || "https://api.nexusmods.com/v3";
-async function fetchWithAuth(url, apiKey, options) {
-    const headers = {
-        "Content-Type": "application/json",
-        apikey: apiKey,
-        ...options?.headers,
+function createApiClient(apiKey) {
+    return async function fetchWithAuth(url, options) {
+        const headers = {
+            "Content-Type": "application/json",
+            apikey: apiKey,
+            ...options?.headers,
+        };
+        const init = { headers, ...options };
+        coreExports.debug(`Fetching URL: ${url} with options: ${JSON.stringify(init, null, 2)}`);
+        return fetch(`${apiBase}${url}`, init);
     };
-    const init = { headers, ...options };
-    coreExports.debug(`Fetching URL: ${url} with options: ${JSON.stringify(init, null, 2)}`);
-    return fetch(`${apiBase}${url}`, init);
 }
-async function getModFileDetails(params, apiKey) {
+async function getModFileDetails(params, api) {
     const { file_id, game_domain } = params;
     const url = `/games/${game_domain}/mod_files/${file_id}`;
-    const response = await fetchWithAuth(url, apiKey);
+    const response = await api(url);
     if (!response.ok) {
         throw new Error(`Failed to get Mod file details: ${response.status} - ${await response.text()}`);
     }
     return (await response.json());
 }
-async function requestUpload(params, apiKey) {
+async function requestUpload(params, api) {
     const { filename, size_bytes } = params;
     const url = `/uploads`;
     coreExports.info(`Requesting upload URL from: ${url}`);
-    const response = await fetchWithAuth(url, apiKey, {
+    const response = await api(url, {
         method: "POST",
         body: JSON.stringify({
             filename: require$$1$5.basename(filename),
@@ -27297,11 +27299,11 @@ async function uploadFile(uploadUrl, filePath, fileSize) {
         throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
     }
 }
-async function finaliseUpload(params, apiKey) {
+async function finaliseUpload(params, api) {
     const { id } = params;
     const url = `/uploads/${id}/finalise`;
     coreExports.info(`Finalising upload at: ${url}`);
-    const response = await fetchWithAuth(url, apiKey, {
+    const response = await api(url, {
         method: "POST",
     });
     if (!response.ok) {
@@ -27309,11 +27311,11 @@ async function finaliseUpload(params, apiKey) {
     }
     return (await response.json());
 }
-async function pollUploadState(params, apiKey, pollIntervalMs = 2000, maxAttempts = 60) {
+async function pollUploadState(params, api, pollIntervalMs = 2000, maxAttempts = 60) {
     const { id } = params;
     const url = `/uploads/${id}`;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        const response = await fetchWithAuth(url, apiKey, {
+        const response = await api(url, {
             method: "GET",
         });
         if (!response.ok) {
@@ -27332,11 +27334,11 @@ async function pollUploadState(params, apiKey, pollIntervalMs = 2000, maxAttempt
     }
     throw new Error(`Upload processing timed out after ${maxAttempts} attempts for ${id}`);
 }
-async function updateModFile(params, body, apiKey) {
+async function updateModFile(params, body, api) {
     const { group_id } = params;
     const url = `/mod_files/update_groups/${group_id}/versions`;
     coreExports.info(`Updating mod file at: ${url}`);
-    const response = await fetchWithAuth(url, apiKey, {
+    const response = await api(url, {
         method: "POST",
         body: JSON.stringify(body),
     });
@@ -27349,6 +27351,7 @@ async function run() {
     coreExports.info("Starting NexusMods upload action");
     try {
         const apiKey = coreExports.getInput("api_key", { required: true });
+        const api = createApiClient(apiKey);
         const fileID = parseInt(coreExports.getInput("file_id", { required: true }), 10);
         const gameDomain = coreExports.getInput("game_domain_name", { required: true });
         const filename = coreExports.getInput("filename", { required: true });
@@ -27357,22 +27360,22 @@ async function run() {
         const fileCategory = (coreExports.getInput("file_category") || "main");
         const { size: fileSize } = statSync(filename);
         // Step 1: Get file group id from mod file details
-        const { update_group_version: { group_id = 0 } = {} } = await getModFileDetails({ game_domain: gameDomain, file_id: fileID }, apiKey);
+        const { update_group_version: { group_id = 0 } = {} } = await getModFileDetails({ game_domain: gameDomain, file_id: fileID }, api);
         if (group_id == 0) {
             throw new Error(`Mod file does not have a group_id`);
         }
         coreExports.info(`Received update group version: ${group_id}`);
         // Step 2: Request upload location
-        const { presigned_url, uuid } = await requestUpload({ size_bytes: fileSize, filename }, apiKey);
+        const { presigned_url, uuid } = await requestUpload({ size_bytes: fileSize, filename }, api);
         coreExports.info(`Received upload UUID: ${uuid}`);
         // Step 3: Upload file data
         await uploadFile(presigned_url, filename, fileSize);
         coreExports.info("File data uploaded successfully");
         // Step 4: Finalise upload
-        const finaliseResult = await finaliseUpload({ id: uuid }, apiKey);
+        const finaliseResult = await finaliseUpload({ id: uuid }, api);
         coreExports.info(`Finalised upload: ${finaliseResult.uuid} (state: ${finaliseResult.state})`);
         // Step 5: Poll until upload is available
-        await pollUploadState({ id: uuid }, apiKey);
+        await pollUploadState({ id: uuid }, api);
         coreExports.info("Upload is now available");
         // Step 6: Update file (associate with mod)
         const { uid: file_uid } = await updateModFile({ group_id: `${group_id}` }, {
@@ -27380,7 +27383,7 @@ async function run() {
             name,
             version,
             file_category: fileCategory,
-        }, apiKey);
+        }, api);
         coreExports.setOutput("file_uid", file_uid);
         coreExports.info("File updated successfully");
         coreExports.info("File uploaded successfully to NexusMods.");
