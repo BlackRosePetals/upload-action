@@ -144,27 +144,6 @@ async function pollUploadState(
   throw new Error(`Upload processing timed out after ${maxAttempts} attempts for ${id}`);
 }
 
-type ClaimFileEndpoint = Endpoint<"/mod_files", "post", 201>;
-
-async function createModFile(
-  params: ClaimFileEndpoint["body"],
-  api: ApiClient,
-): Promise<ClaimFileEndpoint["response"]> {
-  const url = `/mod_files`;
-  info(`Claiming file at: ${url}`);
-
-  const response = await api(url, {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create Mod file: ${response.status} - ${await response.text()}`);
-  }
-
-  return (await response.json()) as ClaimFileEndpoint["response"];
-}
-
 type UpdateModFileEndpoint = Endpoint<"/mod_files/update_groups/{group_id}/versions", "post", 201>;
 
 async function updateModFile(
@@ -200,7 +179,7 @@ export async function run(): Promise<void> {
     const filename = getInput("filename", { required: true });
     const version = getInput("version", { required: true });
     const name = getInput("name") || path.basename(filename);
-    const fileCategory = (getInput("file_category") || "main") as ClaimFileEndpoint["body"]["file_category"];
+    const fileCategory = (getInput("file_category") || "main") as UpdateModFileEndpoint["body"]["file_category"];
 
     const { size: fileSize } = statSync(filename);
 
