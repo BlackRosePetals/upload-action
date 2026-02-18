@@ -27334,8 +27334,8 @@ async function pollUploadState(params, api, pollIntervalMs = 2000, maxAttempts =
     }
     throw new Error(`Upload processing timed out after ${maxAttempts} attempts for ${id}`);
 }
-async function updateModFile(params, body, api) {
-    const { group_id } = params;
+async function updateModFile(params, api) {
+    const { group_id, ...body } = params;
     const url = `/mod_files/update_groups/${group_id}/versions`;
     coreExports.info(`Updating mod file at: ${url}`);
     const response = await api(url, {
@@ -27378,7 +27378,8 @@ async function run() {
         await pollUploadState({ id: uuid }, api);
         coreExports.info("Upload is now available");
         // Step 6: Update file (associate with mod)
-        const { uid: file_uid } = await updateModFile({ group_id: `${group_id}` }, {
+        const { uid: file_uid } = await updateModFile({
+            group_id: `${group_id}`,
             upload_id: uuid,
             name,
             version,

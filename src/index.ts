@@ -147,17 +147,16 @@ async function pollUploadState(
 type UpdateModFileEndpoint = Endpoint<"/mod_files/update_groups/{group_id}/versions", "post", 201>;
 
 async function updateModFile(
-  params: UpdateModFileEndpoint["params"],
-  body: UpdateModFileEndpoint["body"],
+  params: UpdateModFileEndpoint["params"] & UpdateModFileEndpoint["body"],
   api: ApiClient,
 ): Promise<UpdateModFileEndpoint["response"]> {
-  const { group_id } = params;
+  const { group_id, ...body } = params;
   const url = `/mod_files/update_groups/${group_id}/versions`;
   info(`Updating mod file at: ${url}`);
 
   const response = await api(url, {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify(body satisfies UpdateModFileEndpoint["body"]),
   });
 
   if (!response.ok) {
@@ -211,8 +210,8 @@ export async function run(): Promise<void> {
 
     // Step 6: Update file (associate with mod)
     const { uid: file_uid } = await updateModFile(
-      { group_id: `${group_id}` },
       {
+        group_id: `${group_id}`,
         upload_id: uuid,
         name,
         version,
