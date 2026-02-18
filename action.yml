@@ -7,8 +7,8 @@ inputs:
   api_key:
     description: API key
     required: true
-  mod_id:
-    description: Mod ID on Nexus Mods
+  file_id:
+    description: File ID on Nexus Mods
     required: true
   game_domain_name:
     description: Game Domain Name on Nexus Mods

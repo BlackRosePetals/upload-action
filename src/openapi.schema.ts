@@ -14,7 +14,7 @@ export interface paths {
         /**
          * Get upload
          * @description Get the state of an upload session.
-         *     ### Next steps:
+         *     ### Next steps
          *     * Once the `state` is `available`, the upload may be used to [create a mod file](#tag/mod_files/operation/createModFile).
          *     ### FAQ
          *     * How do I create an upload?
@@ -41,12 +41,67 @@ export interface paths {
         /**
          * Create upload
          * @description Creates a new upload session. This allows you to upload data for a new mod file.
-         *     ### Next steps:
-         *     * Call `PUT` with your file data to the returned `presigned_url`. Recommended for files up to 100Mb.
-         *        * Files larger than 100Mb should use the multi part upload approach **(NOTE: Not yet available)**.
+         *
+         *     ⚠️ Files larger than 100 MiB must use a [multi part upload](#tag/uploads/operation/createMultipartUpload).
+         *
+         *     ### Next steps
+         *     * Call `PUT` with your file data to the returned `presigned_url`. Recommended for files up to 100 MiB.
          *     * Once all data is uploaded, [finalise the upload](#tag/uploads/operation/finaliseUpload).
          */
         post: operations["createUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/multipart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create multipart upload
+         * @description Creates a new multipart upload session. This allows you to upload data for a new mod file.
+         *
+         *     💡 Files smaller than 100 MiB can use the simpler [single part upload](#tag/uploads/operation/createUpload).
+         *
+         *     ### Next steps
+         *     Multipart upload uses the [Amazon S3 multipart upload specification](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html).
+         *
+         *     * Call `PUT` with your file data to each `parts_presigned_url`.
+         *        * Each part must be `parts_size` bytes, apart from the final part which may be smaller.
+         *        * Retrieve the `ETag` response header value from each part upload.
+         *     * Once all parts are uploaded, call `POST` to the `complete presigned_url` with [XML post data](#multipart-resources) describing
+         *       the `ETag` for each part.
+         *     * Once multipart complete is called, [finalise the upload](#tag/uploads/operation/finaliseUpload).
+         *
+         *     ### Multipart resources
+         *
+         *     Sample XML for completing the multipart upload:
+         *
+         *     ```xml
+         *     <CompleteMultipartUpload>
+         *       <Part>
+         *         <PartNumber>1</PartNumber>
+         *         <ETag>a54357aff0632cce46d942af68356b38</ETag>
+         *       </Part>
+         *       <Part>
+         *         <PartNumber>2</PartNumber>
+         *         <ETag>0c78aef83f66abc1fa1e8477f296d394</ETag>
+         *       </Part>
+         *       <Part>
+         *         <PartNumber>3</PartNumber>
+         *         <ETag>acbd18db4cc2f85cedef654fccc4a4d8</ETag>
+         *       </Part>
+         *     </CompleteMultipartUpload>
+         *     ```
+         */
+        post: operations["createMultipartUpload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -65,7 +120,7 @@ export interface paths {
         /**
          * Finalise upload
          * @description Closes the upload session once all data is uploaded. Sessions must be closed before you can use the upload as a mod file.
-         *     ### Next steps:
+         *     ### Next steps
          *     * Wait for the upload to be ready for use as a mod file. Use [get upload](#tag/uploads/operation/getUpload) to check that `state`
          *       is `available`.
          *     * [Create a mod file](#tag/mod_files/operation/createModFile) from this upload.
@@ -99,6 +154,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mod_files/update_groups/{group_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a new update group version (updates a mod file)
+         * @description Creates a new version of an update group (tied to a mod file), the upload specified in the request becomes the most recent entry in the update chain.
+         */
+        post: operations["createUpdateGroupVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/games/{game_domain}/mods/{mod_id}": {
         parameters: {
             query?: never;
@@ -111,6 +186,26 @@ export interface paths {
          * @description Retrieve specified mod, from a specified game.
          */
         get: operations["getMod"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{game_domain}/mod_files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod file
+         * @description Retrieve a specific file for a game.
+         */
+        get: operations["getModFile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -154,7 +249,7 @@ export interface components {
             filename: string;
         };
         CreateUploadSuccess: {
-            /** @description Presigned url */
+            /** @description Presigned URL */
             presigned_url: string;
         } & {
             /**
@@ -163,7 +258,28 @@ export interface components {
              */
             uuid: string;
             /** @description User ID */
-            user_id?: number;
+            user_id: number;
+            /** @description Upload state */
+            state: string;
+        };
+        CreateMultipartUploadSuccess: {
+            /**
+             * Format: int64
+             * @description Size of each part in bytes
+             */
+            parts_size: number;
+            /** @description Presigned URLs for each upload part */
+            parts_presigned_url: string[];
+            /** @description Presigned URL to complete upload */
+            complete_presigned_url: string;
+        } & {
+            /**
+             * Format: uuid
+             * @description Upload ID
+             */
+            uuid: string;
+            /** @description User ID */
+            user_id: number;
             /** @description Upload state */
             state: string;
         };
@@ -174,7 +290,7 @@ export interface components {
              */
             uuid: string;
             /** @description User ID */
-            user_id?: number;
+            user_id: number;
             /** @description Upload state */
             state: string;
         };
@@ -185,7 +301,7 @@ export interface components {
              */
             uuid: string;
             /** @description User ID */
-            user_id?: number;
+            user_id: number;
             /** @description Upload state */
             state: string;
         };
@@ -207,7 +323,7 @@ export interface components {
              */
             uuid: string;
             /** @description User ID */
-            user_id?: number;
+            user_id: number;
             /** @description Upload state */
             state: string;
         };
@@ -224,6 +340,32 @@ export interface components {
         };
         /** @enum {string} */
         ModFileCategory: "main" | "optional" | "miscellaneous";
+        CreateUpdateGroupVersionRequest: {
+            /**
+             * Format: uuid
+             * @description Upload ID.
+             */
+            upload_id: string;
+            /** @description Mod file name */
+            name: string;
+            /** @description Description of the mod file */
+            description?: string | null;
+            /** @description Mod file version */
+            version: string;
+            /** @enum {string} */
+            file_category: "main" | "optional" | "miscellaneous";
+        };
+        CreateUpdateGroupVersionSuccess: {
+            /**
+             * Format: uuid
+             * @description Mod File UID
+             */
+            uid: string;
+            /** @description Mod file name */
+            name: string;
+            /** @enum {string} */
+            file_category: "main" | "optional" | "miscellaneous";
+        };
         BadRequest: {
             /** @description Error message */
             error: string;
@@ -245,114 +387,69 @@ export interface components {
         GetModDetails: {
             /** @description Unique identifier for the mod */
             uid: string;
-            /** @description Mod ID */
+            /** @description Mod ID (forms composite key with game) */
             mod_id: number;
             /** @description Game ID */
             game_id: number;
             /** @description Mod name (only shown if mod is available) */
             name?: string | null;
-            /** @description Short summary of the mod (only shown if mod is available) */
-            summary?: string | null;
-            /** @description Full description of the mod (only shown if mod is available) */
-            description?: string | null;
-            /** @description URL to the mod's picture (only shown if mod is available) */
-            picture_url?: string | null;
-            /** @description Total download count (only shown if mod is available) */
-            mod_downloads?: number | null;
-            /** @description Unique download count (only shown if mod is available) */
-            mod_unique_downloads?: number | null;
-            /** @description Whether ratings are allowed for this mod */
-            allow_rating: boolean;
-            /** @description Game domain name */
-            domain_name: string;
-            /** @description Category ID */
-            category_id: number;
-            /** @description Current mod version */
-            version: string;
-            /** @description Number of endorsements */
-            endorsement_count: number;
-            /** @description Unix timestamp of when the mod was created */
-            created_timestamp: number;
-            /**
-             * Format: date-time
-             * @description ISO 8601 datetime of when the mod was created
-             */
-            created_time: string;
-            /** @description Unix timestamp of when the mod was last updated */
-            updated_timestamp: number;
-            /**
-             * Format: date-time
-             * @description ISO 8601 datetime of when the mod was last updated
-             */
-            updated_time: string;
-            /** @description Mod author name */
-            author: string;
-            /** @description Name of the user who uploaded the mod */
-            uploaded_by: string;
-            /** @description URL to the uploader's profile */
-            uploaded_users_profile_url: string;
-            /** @description Whether the mod contains adult content */
-            contains_adult_content: boolean;
-            /** @description Mod status */
-            status: string;
-            /** @description Whether the mod is available (published) */
-            available: boolean;
         };
         Mod: {
             /** @description Unique identifier for the mod */
             uid: string;
-            /** @description Mod ID */
+            /** @description Mod ID (forms composite key with game) */
             mod_id: number;
             /** @description Game ID */
             game_id: number;
             /** @description Mod name (only shown if mod is available) */
             name?: string | null;
-            /** @description Short summary of the mod (only shown if mod is available) */
-            summary?: string | null;
-            /** @description Full description of the mod (only shown if mod is available) */
-            description?: string | null;
-            /** @description URL to the mod's picture (only shown if mod is available) */
-            picture_url?: string | null;
-            /** @description Total download count (only shown if mod is available) */
-            mod_downloads?: number | null;
-            /** @description Unique download count (only shown if mod is available) */
-            mod_unique_downloads?: number | null;
-            /** @description Whether ratings are allowed for this mod */
-            allow_rating: boolean;
-            /** @description Game domain name */
-            domain_name: string;
-            /** @description Category ID */
-            category_id: number;
-            /** @description Current mod version */
-            version: string;
-            /** @description Number of endorsements */
-            endorsement_count: number;
-            /** @description Unix timestamp of when the mod was created */
-            created_timestamp: number;
+        };
+        GetModFileDetails: {
+            /** @description Unique identifier for the file */
+            uid: string;
+            /** @description File ID (forms composite key with game) */
+            file_id: number;
+            /** @description Game ID */
+            game_id: number;
+            /** @description Mod ID that this file belongs to */
+            mod_id: number;
+            update_group_version?: {
+                /**
+                 * Format: decimal
+                 * @description Position within the file update group
+                 */
+                position: string;
+                /** @description File update group ID */
+                group_id: number;
+            };
+        };
+        ModFile1: {
+            /** @description Unique identifier for the file */
+            uid: string;
+            /** @description File ID (forms composite key with game) */
+            file_id: number;
+            /** @description Game ID */
+            game_id: number;
+            /** @description Mod ID that this file belongs to */
+            mod_id: number;
+            update_group_version?: {
+                /**
+                 * Format: decimal
+                 * @description Position within the file update group
+                 */
+                position: string;
+                /** @description File update group ID */
+                group_id: number;
+            };
+        };
+        FileUpdateGroupVersion: {
             /**
-             * Format: date-time
-             * @description ISO 8601 datetime of when the mod was created
+             * Format: decimal
+             * @description Position within the file update group
              */
-            created_time: string;
-            /** @description Unix timestamp of when the mod was last updated */
-            updated_timestamp: number;
-            /**
-             * Format: date-time
-             * @description ISO 8601 datetime of when the mod was last updated
-             */
-            updated_time: string;
-            /** @description Mod author name */
-            author: string;
-            /** @description Name of the user who uploaded the mod */
-            uploaded_by: string;
-            /** @description URL to the uploader's profile */
-            uploaded_users_profile_url: string;
-            /** @description Whether the mod contains adult content */
-            contains_adult_content: boolean;
-            /** @description Mod status */
-            status: string;
-            /** @description Whether the mod is available (published) */
-            available: boolean;
+            position: string;
+            /** @description File update group ID */
+            group_id: number;
         };
     };
     responses: never;
@@ -388,7 +485,7 @@ export interface operations {
                          */
                         uuid: string;
                         /** @description User ID */
-                        user_id?: number;
+                        user_id: number;
                         /** @description Upload state */
                         state: string;
                     };
@@ -455,14 +552,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Upload UUID and presigned url */
+            /** @description Upload UUID and presigned URL */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** @description Presigned url */
+                        /** @description Presigned URL */
                         presigned_url: string;
                     } & {
                         /**
@@ -471,7 +568,85 @@ export interface operations {
                          */
                         uuid: string;
                         /** @description User ID */
-                        user_id?: number;
+                        user_id: number;
+                        /** @description Upload state */
+                        state: string;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                        /** @description List of validation errors */
+                        details: string[];
+                    };
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    createMultipartUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: int64
+                     * @description Size of file in bytes
+                     */
+                    size_bytes: number;
+                    /** @description User-defined filename */
+                    filename: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Upload UUID and presigned URL */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: int64
+                         * @description Size of each part in bytes
+                         */
+                        parts_size: number;
+                        /** @description Presigned URLs for each upload part */
+                        parts_presigned_url: string[];
+                        /** @description Presigned URL to complete upload */
+                        complete_presigned_url: string;
+                    } & {
+                        /**
+                         * Format: uuid
+                         * @description Upload ID
+                         */
+                        uuid: string;
+                        /** @description User ID */
+                        user_id: number;
                         /** @description Upload state */
                         state: string;
                     };
@@ -518,7 +693,7 @@ export interface operations {
                          */
                         uuid: string;
                         /** @description User ID */
-                        user_id?: number;
+                        user_id: number;
                         /** @description Upload state */
                         state: string;
                     };
@@ -680,6 +855,95 @@ export interface operations {
             };
         };
     };
+    createUpdateGroupVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Update Group ID */
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uuid
+                     * @description Upload ID.
+                     */
+                    upload_id: string;
+                    /** @description Mod file name */
+                    name: string;
+                    /** @description Description of the mod file */
+                    description?: string | null;
+                    /** @description Mod file version */
+                    version: string;
+                    /** @enum {string} */
+                    file_category: "main" | "optional" | "miscellaneous";
+                };
+            };
+        };
+        responses: {
+            /** @description UpdateGroupVersion */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description Mod File UID
+                         */
+                        uid: string;
+                        /** @description Mod file name */
+                        name: string;
+                        /** @enum {string} */
+                        file_category: "main" | "optional" | "miscellaneous";
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                        /** @description List of validation errors */
+                        details: string[];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
     getMod: {
         parameters: {
             query?: never;
@@ -711,58 +975,97 @@ export interface operations {
                     "application/json": {
                         /** @description Unique identifier for the mod */
                         uid: string;
-                        /** @description Mod ID */
+                        /** @description Mod ID (forms composite key with game) */
                         mod_id: number;
                         /** @description Game ID */
                         game_id: number;
                         /** @description Mod name (only shown if mod is available) */
                         name?: string | null;
-                        /** @description Short summary of the mod (only shown if mod is available) */
-                        summary?: string | null;
-                        /** @description Full description of the mod (only shown if mod is available) */
-                        description?: string | null;
-                        /** @description URL to the mod's picture (only shown if mod is available) */
-                        picture_url?: string | null;
-                        /** @description Total download count (only shown if mod is available) */
-                        mod_downloads?: number | null;
-                        /** @description Unique download count (only shown if mod is available) */
-                        mod_unique_downloads?: number | null;
-                        /** @description Whether ratings are allowed for this mod */
-                        allow_rating: boolean;
-                        /** @description Game domain name */
-                        domain_name: string;
-                        /** @description Category ID */
-                        category_id: number;
-                        /** @description Current mod version */
-                        version: string;
-                        /** @description Number of endorsements */
-                        endorsement_count: number;
-                        /** @description Unix timestamp of when the mod was created */
-                        created_timestamp: number;
-                        /**
-                         * Format: date-time
-                         * @description ISO 8601 datetime of when the mod was created
-                         */
-                        created_time: string;
-                        /** @description Unix timestamp of when the mod was last updated */
-                        updated_timestamp: number;
-                        /**
-                         * Format: date-time
-                         * @description ISO 8601 datetime of when the mod was last updated
-                         */
-                        updated_time: string;
-                        /** @description Mod author name */
-                        author: string;
-                        /** @description Name of the user who uploaded the mod */
-                        uploaded_by: string;
-                        /** @description URL to the uploader's profile */
-                        uploaded_users_profile_url: string;
-                        /** @description Whether the mod contains adult content */
-                        contains_adult_content: boolean;
-                        /** @description Mod status */
-                        status: string;
-                        /** @description Whether the mod is available (published) */
-                        available: boolean;
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                        /** @description List of validation errors */
+                        details: string[];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                    };
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
+                    };
+                };
+            };
+        };
+    };
+    getModFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Game domain name.
+                 *
+                 *     This is the human readable game name which appears in URLs on the site e.g. `skyrimspecialedition` and `fallout4`.
+                 */
+                game_domain: string;
+                /** @description File ID, specific to each game (not the unique ID). */
+                file_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mod file details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Unique identifier for the file */
+                        uid: string;
+                        /** @description File ID (forms composite key with game) */
+                        file_id: number;
+                        /** @description Game ID */
+                        game_id: number;
+                        /** @description Mod ID that this file belongs to */
+                        mod_id: number;
+                        update_group_version?: {
+                            /**
+                             * Format: decimal
+                             * @description Position within the file update group
+                             */
+                            position: string;
+                            /** @description File update group ID */
+                            group_id: number;
+                        };
                     };
                 };
             };

@@ -21,24 +21,24 @@ async function fetchWithAuth(
   const init = { headers, ...options };
   debug(`Fetching URL: ${url} with options: ${JSON.stringify(init, null, 2)}`);
 
-  return fetch(url, init);
+  return fetch(`${apiBase}${url}`, init);
 }
 
-type ModDetailsEndpoint = Endpoint<"/games/{game_domain}/mods/{mod_id}">;
+type GetModFileDetailsEndpoint = Endpoint<"/games/{game_domain}/mod_files/{file_id}">;
 
-async function getModDetails(
-  params: ModDetailsEndpoint["params"],
+async function getModFileDetails(
+  params: GetModFileDetailsEndpoint["params"],
   apiKey: string,
-): Promise<ModDetailsEndpoint["response"]> {
-  const { game_domain, mod_id } = params;
-  const url = `${apiBase}/games/${game_domain}/mods/${mod_id}`;
+): Promise<GetModFileDetailsEndpoint["response"]> {
+  const { file_id, game_domain } = params;
+  const url = `/games/${game_domain}/mod_files/${file_id}`;
   const response = await fetchWithAuth(url, apiKey);
 
   if (!response.ok) {
-    throw new Error(`Failed to get mod details: ${response.status} - ${await response.text()}`);
+    throw new Error(`Failed to get Mod file details: ${response.status} - ${await response.text()}`);
   }
 
-  return (await response.json()) as ModDetailsEndpoint["response"];
+  return (await response.json()) as GetModFileDetailsEndpoint["response"];
 }
 
 type RequestUploadEndpoint = Endpoint<"/uploads", "post", 201>;
@@ -48,7 +48,7 @@ async function requestUpload(
   apiKey: string,
 ): Promise<RequestUploadEndpoint["response"]> {
   const { filename, size_bytes } = params;
-  const url = `${apiBase}/uploads`;
+  const url = `/uploads`;
 
   info(`Requesting upload URL from: ${url}`);
   const response = await fetchWithAuth(url, apiKey, {
@@ -89,7 +89,7 @@ async function finaliseUpload(
   apiKey: string,
 ): Promise<FinaliseUploadEndpoint["response"]> {
   const { id } = params;
-  const url = `${apiBase}/uploads/${id}/finalise`;
+  const url = `/uploads/${id}/finalise`;
   info(`Finalising upload at: ${url}`);
 
   const response = await fetchWithAuth(url, apiKey, {
@@ -112,7 +112,7 @@ async function pollUploadState(
   maxAttempts = 60,
 ): Promise<GetUploadEndpoint["response"]> {
   const { id } = params;
-  const url = `${apiBase}/uploads/${id}`;
+  const url = `/uploads/${id}`;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const response = await fetchWithAuth(url, apiKey, {
@@ -143,27 +143,46 @@ async function pollUploadState(
 
 type ClaimFileEndpoint = Endpoint<"/mod_files", "post", 201>;
 
-async function claimFile(params: ClaimFileEndpoint["body"], apiKey: string): Promise<ClaimFileEndpoint["response"]> {
-  const { upload_id, mod_uid, name, version, file_category } = params;
-  const url = `${apiBase}/mod_files`;
+async function createModFile(
+  params: ClaimFileEndpoint["body"],
+  apiKey: string,
+): Promise<ClaimFileEndpoint["response"]> {
+  const url = `/mod_files`;
   info(`Claiming file at: ${url}`);
 
   const response = await fetchWithAuth(url, apiKey, {
     method: "POST",
-    body: JSON.stringify({
-      upload_id,
-      mod_uid,
-      name,
-      version,
-      file_category,
-    }),
+    body: JSON.stringify(params),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to claim file: ${response.status} - ${await response.text()}`);
+    throw new Error(`Failed to create Mod file: ${response.status} - ${await response.text()}`);
   }
 
   return (await response.json()) as ClaimFileEndpoint["response"];
+}
+
+type UpdateModFileEndpoint = Endpoint<"/mod_files/update_groups/{group_id}/versions", "post", 201>;
+
+async function updateModFile(
+  params: UpdateModFileEndpoint["params"],
+  body: UpdateModFileEndpoint["body"],
+  apiKey: string,
+): Promise<UpdateModFileEndpoint["response"]> {
+  const { group_id } = params;
+  const url = `/mod_files/update_groups/${group_id}/versions`;
+  info(`Updating mod file at: ${url}`);
+
+  const response = await fetchWithAuth(url, apiKey, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update Mod file: ${response.status} - ${await response.text()}`);
+  }
+
+  return (await response.json()) as UpdateModFileEndpoint["response"];
 }
 
 export async function run(): Promise<void> {
@@ -171,7 +190,7 @@ export async function run(): Promise<void> {
 
   try {
     const apiKey = getInput("api_key", { required: true });
-    const modId = parseInt(getInput("mod_id", { required: true }), 10);
+    const fileID = parseInt(getInput("file_id", { required: true }), 10);
     const gameDomain = getInput("game_domain_name", { required: true });
     const filename = getInput("filename", { required: true });
     const version = getInput("version", { required: true });
@@ -180,9 +199,15 @@ export async function run(): Promise<void> {
 
     const { size: fileSize } = statSync(filename);
 
-    // Step 1: Get UUID from mod details
-    const { uid: mod_uid } = await getModDetails({ game_domain: gameDomain, mod_id: modId }, apiKey);
-    info(`Received mod UUID: ${mod_uid}`);
+    // Step 1: Get file group id from mod file details
+    const { update_group_version: { group_id = 0 } = {} } = await getModFileDetails(
+      { game_domain: gameDomain, file_id: fileID },
+      apiKey,
+    );
+    if (group_id == 0) {
+      throw new Error(`Mod file does not have a group_id`);
+    }
+    info(`Received update group version: ${group_id}`);
 
     // Step 2: Request upload location
     const { presigned_url, uuid } = await requestUpload({ size_bytes: fileSize, filename }, apiKey);
@@ -200,13 +225,19 @@ export async function run(): Promise<void> {
     await pollUploadState({ id: uuid }, apiKey);
     info("Upload is now available");
 
-    // Step 6: Claim file (associate with mod)
-    const { uid: file_uid } = await claimFile(
-      { upload_id: uuid, mod_uid, name, version, file_category: fileCategory },
+    // Step 6: Update file (associate with mod)
+    const { uid: file_uid } = await updateModFile(
+      { group_id: `${group_id}` },
+      {
+        upload_id: uuid,
+        name,
+        version,
+        file_category: fileCategory,
+      },
       apiKey,
     );
     setOutput("file_uid", file_uid);
-    info("File claimed successfully");
+    info("File updated successfully");
 
     info("File uploaded successfully to NexusMods.");
   } catch (error) {
