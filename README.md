@@ -1,6 +1,6 @@
 # NexusMods Upload GitHub Action
 
-# THIS AND THE API IT'S USING ARE CURRENTLY PRE-RELEASE AND WILL MOST LIKELY NOT WORK!
+# THE API USED HERE IS CURRENTLY FOR EVALUATION ONLY
 
 This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is designed to automate the process of uploading mod files as part of your CI/CD workflow.
 
@@ -13,11 +13,17 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 | Name             | Description                                        | Required | Default |
 | ---------------- | -------------------------------------------------- | -------- | ------- |
 | api_key          | API key                                            | Yes      |         |
-| mod_id           | Mod ID on Nexus Mods                               | Yes      |         |
+| file_id          | File ID on Nexus Mods                              | Yes      |         |
 | game_domain_name | Game Domain Name on Nexus Mods                     | Yes      |         |
 | filename         | Name of the zip file to upload                     | Yes      |         |
 | version          | Version string for the uploaded file (e.g., 1.0.0) | Yes      |         |
-| fileCategory     | File category for the uploaded file                | No       | 1       |
+| fileCategory     | File category for the uploaded file                | No       | main    |
+
+## Outputs
+
+| Name     | Description                                |
+| -------- | ------------------------------------------ |
+| file_uid | The UID of the uploaded file on Nexus Mods |
 
 ## Usage
 
@@ -33,11 +39,11 @@ First, use another action to create a zip file. Then, use this action to upload 
   uses: <owner>/<repo>@<tag>
   with:
     api_key: ${{ secrets.NEXUSMODS_API_KEY }}
-    mod_id: <mod_id>
+    file_id: <file_id>
     game_domain_name: <game_domain_name>
     filename: my-mod.zip
     version: 1.0.0
-    fileCategory: 1 # optional
+    fileCategory: main # optional
 ```
 
 ## Development
@@ -51,7 +57,7 @@ This project requires Node v20 or higher
 First run `npm install`, then create a `.env` file with the following required environment variables:
 
 - `INPUT_API_KEY`
-- `INPUT_MOD_ID`
+- `INPUT_FILE_ID`
 - `INPUT_GAME_DOMAIN_NAME`
 - `INPUT_FILENAME`
 - `INPUT_VERSION`
