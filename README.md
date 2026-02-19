@@ -10,14 +10,15 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 
 ## Inputs
 
-| Name             | Description                                        | Required | Default |
-| ---------------- | -------------------------------------------------- | -------- | ------- |
-| api_key          | API key                                            | Yes      |         |
-| file_id          | File ID on Nexus Mods                              | Yes      |         |
-| game_domain_name | Game Domain Name on Nexus Mods                     | Yes      |         |
-| filename         | Name of the zip file to upload                     | Yes      |         |
-| version          | Version string for the uploaded file (e.g., 1.0.0) | Yes      |         |
-| fileCategory     | File category for the uploaded file                | No       | main    |
+| Name             | Description                                        | Required | Default  |
+| ---------------- | -------------------------------------------------- | -------- | -------- |
+| api_key          | API key                                            | Yes      |          |
+| file_id          | File ID on Nexus Mods                              | Yes      |          |
+| game_domain_name | Game Domain Name on Nexus Mods                     | Yes      |          |
+| filename         | Name of the zip file to upload                     | Yes      |          |
+| version          | Version string for the uploaded file (e.g., 1.0.0) | Yes      |          |
+| display_name     | Display name for the uploaded file                 | No       | filename |
+| file_category    | File category for the uploaded file                | No       | main     |
 
 ## Outputs
 
@@ -43,7 +44,7 @@ First, use another action to create a zip file. Then, use this action to upload 
     game_domain_name: <game_domain_name>
     filename: my-mod.zip
     version: 1.0.0
-    fileCategory: main # optional
+    file_category: main # optional
 ```
 
 ## Development
@@ -64,7 +65,8 @@ First run `npm install`, then create a `.env` file with the following required e
 
 Optional environment variables:
 
-- `INPUT_FILECATEGORY`
+- `INPUT_DISPLAY_NAME`
+- `INPUT_FILE_CATEGORY`
 - `NEXUSMODS_API_BASE` - Override the API base URL (defaults to `https://api.nexusmods.com/v3`)
 - `ACTIONS_STEP_DEBUG=true` - Enable debug output
 

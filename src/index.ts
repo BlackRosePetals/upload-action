@@ -178,7 +178,7 @@ export async function run(): Promise<void> {
     const gameDomain = getInput("game_domain_name", { required: true });
     const filename = getInput("filename", { required: true });
     const version = getInput("version", { required: true });
-    const name = getInput("name") || path.basename(filename);
+    const name = getInput("display_name") || path.basename(filename);
     const fileCategory = (getInput("file_category") || "main") as UpdateModFileEndpoint["body"]["file_category"];
 
     const { size: fileSize } = statSync(filename);

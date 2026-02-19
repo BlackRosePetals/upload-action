@@ -27357,7 +27357,7 @@ async function run() {
         const gameDomain = coreExports.getInput("game_domain_name", { required: true });
         const filename = coreExports.getInput("filename", { required: true });
         const version = coreExports.getInput("version", { required: true });
-        const name = coreExports.getInput("name") || require$$1$5.basename(filename);
+        const name = coreExports.getInput("display_name") || require$$1$5.basename(filename);
         const fileCategory = (coreExports.getInput("file_category") || "main");
         const { size: fileSize } = statSync(filename);
         // Step 1: Get file group id from mod file details

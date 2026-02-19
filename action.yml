@@ -22,7 +22,10 @@ inputs:
   fileCategory:
     description: 'File category for the uploaded file (default: 1)'
     required: false
-    default: '1'
+    default: main
+  display_name:
+    description: The display name for the uploaded file, defaults to the file name
+    required: false
 outputs:
   file_uid:
     description: The UID of the uploaded file on Nexus Mods
