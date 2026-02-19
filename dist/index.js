@@ -27253,6 +27253,7 @@ function createApiClient(apiKey) {
         const headers = {
             "Content-Type": "application/json",
             apikey: apiKey,
+            "User-Agent": "Nexus-Mods/upload-action",
             ...options?.headers,
         };
         const init = { headers, ...options };
