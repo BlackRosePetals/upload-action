@@ -37,7 +37,7 @@ First, use another action to create a zip file. Then, use this action to upload 
   run: zip -r my-mod.zip ./dist
 
 - name: Upload to NexusMods
-  uses: <owner>/<repo>@<tag>
+  uses: Nexus-Mods/upload-action@<tag>
   with:
     api_key: ${{ secrets.NEXUSMODS_API_KEY }}
     file_id: <file_id>
