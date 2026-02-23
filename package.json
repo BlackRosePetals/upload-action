@@ -1,24 +1,22 @@
 {
   "name": "nexusmods-upload-action",
-  "description": "Upload files to Nexus Mods using the Nexus Mods API",
   "version": "0.0.1",
-  "author": "nexusmods",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bengosneynexusmods/upload-action.git"
-  },
-  "bugs": {
-    "url": "https://github.com/bengosneynexusmods/upload-action/issues"
-  },
+  "description": "Upload files to Nexus Mods using the Nexus Mods API",
   "keywords": [
     "actions"
   ],
+  "bugs": {
+    "url": "https://github.com/Nexus-Mods/upload-action/issues"
+  },
+  "license": "MIT",
+  "author": "nexusmods",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nexus-Mods/upload-action.git"
+  },
+  "type": "module",
   "exports": {
     ".": "./src/index.js"
-  },
-  "engines": {
-    "node": ">=20"
   },
   "scripts": {
     "check": "npx tsc --noEmit",
@@ -27,10 +25,6 @@
     "format:check": "npx prettier --check .",
     "local-action": "npx @github/local-action . src/index.ts .env",
     "openapi-spec": "npx openapi-typescript https://api.nexusmods.com/openapi.yaml -o src/openapi.schema.ts"
-  },
-  "license": "MIT",
-  "prettier": {
-    "printWidth": 120
   },
   "dependencies": {
     "@actions/core": "^1.11.1"
@@ -50,5 +44,11 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
+  },
+  "prettier": {
+    "printWidth": 120
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
