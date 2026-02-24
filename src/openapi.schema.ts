@@ -15,7 +15,7 @@ export interface paths {
          * Get upload
          * @description Get the state of an upload session.
          *     ### Next steps
-         *     * Once the `state` is `available`, the upload may be used to [create a mod file](#tag/mod_files/operation/createModFile).
+         *     * Once the `state` is `available`, the upload may be used to [create a mod file](#tag/mod-files/operation/createModFile).
          *     ### FAQ
          *     * How do I create an upload?
          *        * Use [create upload](#tag/uploads/operation/createUpload) to start a new upload session.
@@ -123,7 +123,7 @@ export interface paths {
          *     ### Next steps
          *     * Wait for the upload to be ready for use as a mod file. Use [get upload](#tag/uploads/operation/getUpload) to check that `state`
          *       is `available`.
-         *     * [Create a mod file](#tag/mod_files/operation/createModFile) from this upload.
+         *     * [Create a mod file](#tag/mod-files/operation/createModFile) from this upload.
          */
         post: operations["finaliseUpload"];
         delete?: never;
@@ -132,7 +132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/mod_files": {
+    "/mod-files": {
         parameters: {
             query?: never;
             header?: never;
@@ -154,7 +154,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/mod_files/update_groups/{group_id}/versions": {
+    "/mod-file-update-groups/{group_id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -194,7 +194,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/games/{game_domain}/mod_files/{file_id}": {
+    "/games/{game_domain}/mod-files/{file_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -259,8 +259,8 @@ export interface components {
             uuid: string;
             /** @description User ID */
             user_id: number;
-            /** @description Upload state */
-            state: string;
+            /** @enum {string} */
+            state: "created" | "available";
         };
         CreateMultipartUploadSuccess: {
             /**
@@ -280,8 +280,8 @@ export interface components {
             uuid: string;
             /** @description User ID */
             user_id: number;
-            /** @description Upload state */
-            state: string;
+            /** @enum {string} */
+            state: "created" | "available";
         };
         FinaliseUploadSuccess: {
             /**
@@ -291,8 +291,8 @@ export interface components {
             uuid: string;
             /** @description User ID */
             user_id: number;
-            /** @description Upload state */
-            state: string;
+            /** @enum {string} */
+            state: "created" | "available";
         };
         GetUploadSuccess: {
             /**
@@ -302,15 +302,17 @@ export interface components {
             uuid: string;
             /** @description User ID */
             user_id: number;
-            /** @description Upload state */
-            state: string;
+            /** @enum {string} */
+            state: "created" | "available";
         };
         CreateModFileSuccess: {
             /**
              * Format: uuid
-             * @description Mod File UID
+             * @description Mod file UID
              */
             uid: string;
+            /** @description Mod file ID, specific to each game (not the unique ID). */
+            id: number;
             /** @description Mod file name */
             name: string;
             /** @enum {string} */
@@ -324,20 +326,24 @@ export interface components {
             uuid: string;
             /** @description User ID */
             user_id: number;
-            /** @description Upload state */
-            state: string;
+            /** @enum {string} */
+            state: "created" | "available";
         };
         ModFile: {
             /**
              * Format: uuid
-             * @description Mod File UID
+             * @description Mod file UID
              */
             uid: string;
+            /** @description Mod file ID, specific to each game (not the unique ID). */
+            id: number;
             /** @description Mod file name */
             name: string;
             /** @enum {string} */
             file_category: "main" | "optional" | "miscellaneous";
         };
+        /** @enum {string} */
+        UploadState: "created" | "available";
         /** @enum {string} */
         ModFileCategory: "main" | "optional" | "miscellaneous";
         CreateUpdateGroupVersionRequest: {
@@ -358,9 +364,11 @@ export interface components {
         CreateUpdateGroupVersionSuccess: {
             /**
              * Format: uuid
-             * @description Mod File UID
+             * @description Mod file UID
              */
             uid: string;
+            /** @description Mod file ID, specific to each game (not the unique ID). */
+            id: number;
             /** @description Mod file name */
             name: string;
             /** @enum {string} */
@@ -486,8 +494,8 @@ export interface operations {
                         uuid: string;
                         /** @description User ID */
                         user_id: number;
-                        /** @description Upload state */
-                        state: string;
+                        /** @enum {string} */
+                        state: "created" | "available";
                     };
                 };
             };
@@ -569,8 +577,8 @@ export interface operations {
                         uuid: string;
                         /** @description User ID */
                         user_id: number;
-                        /** @description Upload state */
-                        state: string;
+                        /** @enum {string} */
+                        state: "created" | "available";
                     };
                 };
             };
@@ -585,6 +593,18 @@ export interface operations {
                         error: string;
                         /** @description List of validation errors */
                         details: string[];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
                     };
                 };
             };
@@ -647,8 +667,8 @@ export interface operations {
                         uuid: string;
                         /** @description User ID */
                         user_id: number;
-                        /** @description Upload state */
-                        state: string;
+                        /** @enum {string} */
+                        state: "created" | "available";
                     };
                 };
             };
@@ -663,6 +683,18 @@ export interface operations {
                         error: string;
                         /** @description List of validation errors */
                         details: string[];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Error message */
+                        error: string;
                     };
                 };
             };
@@ -694,8 +726,8 @@ export interface operations {
                         uuid: string;
                         /** @description User ID */
                         user_id: number;
-                        /** @description Upload state */
-                        state: string;
+                        /** @enum {string} */
+                        state: "created" | "available";
                     };
                 };
             };
@@ -793,9 +825,11 @@ export interface operations {
                     "application/json": {
                         /**
                          * Format: uuid
-                         * @description Mod File UID
+                         * @description Mod file UID
                          */
                         uid: string;
+                        /** @description Mod file ID, specific to each game (not the unique ID). */
+                        id: number;
                         /** @description Mod file name */
                         name: string;
                         /** @enum {string} */
@@ -894,9 +928,11 @@ export interface operations {
                     "application/json": {
                         /**
                          * Format: uuid
-                         * @description Mod File UID
+                         * @description Mod file UID
                          */
                         uid: string;
+                        /** @description Mod file ID, specific to each game (not the unique ID). */
+                        id: number;
                         /** @description Mod file name */
                         name: string;
                         /** @enum {string} */

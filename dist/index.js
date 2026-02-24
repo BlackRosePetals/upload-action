@@ -27263,7 +27263,7 @@ function createApiClient(apiKey) {
 }
 async function getModFileDetails(params, api) {
     const { file_id, game_domain } = params;
-    const url = `/games/${game_domain}/mod_files/${file_id}`;
+    const url = `/games/${game_domain}/mod-files/${file_id}`;
     const response = await api(url);
     if (!response.ok) {
         throw new Error(`Failed to get Mod file details: ${response.status} - ${await response.text()}`);
@@ -27327,9 +27327,6 @@ async function pollUploadState(params, api, pollIntervalMs = 2000, maxAttempts =
         if (data.state === "available") {
             return data;
         }
-        if (data.state === "failed") {
-            throw new Error(`Upload processing failed for ${id}`);
-        }
         const delay = Math.min(pollIntervalMs * Math.pow(1.5, attempt), 30000);
         await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -27337,7 +27334,7 @@ async function pollUploadState(params, api, pollIntervalMs = 2000, maxAttempts =
 }
 async function updateModFile(params, api) {
     const { group_id, ...body } = params;
-    const url = `/mod_files/update_groups/${group_id}/versions`;
+    const url = `/mod-file-update-groups/${group_id}/versions`;
     coreExports.info(`Updating mod file at: ${url}`);
     const response = await api(url, {
         method: "POST",

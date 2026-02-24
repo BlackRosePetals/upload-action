@@ -28,14 +28,14 @@ function createApiClient(apiKey: string) {
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
-type GetModFileDetailsEndpoint = Endpoint<"/games/{game_domain}/mod_files/{file_id}">;
+type GetModFileDetailsEndpoint = Endpoint<"/games/{game_domain}/mod-files/{file_id}">;
 
 async function getModFileDetails(
   params: GetModFileDetailsEndpoint["params"],
   api: ApiClient,
 ): Promise<GetModFileDetailsEndpoint["response"]> {
   const { file_id, game_domain } = params;
-  const url = `/games/${game_domain}/mod_files/${file_id}`;
+  const url = `/games/${game_domain}/mod-files/${file_id}`;
   const response = await api(url);
 
   if (!response.ok) {
@@ -134,10 +134,6 @@ async function pollUploadState(
       return data;
     }
 
-    if (data.state === "failed") {
-      throw new Error(`Upload processing failed for ${id}`);
-    }
-
     const delay = Math.min(pollIntervalMs * Math.pow(1.5, attempt), 30000);
     await new Promise((resolve) => setTimeout(resolve, delay));
   }
@@ -145,14 +141,14 @@ async function pollUploadState(
   throw new Error(`Upload processing timed out after ${maxAttempts} attempts for ${id}`);
 }
 
-type UpdateModFileEndpoint = Endpoint<"/mod_files/update_groups/{group_id}/versions", "post", 201>;
+type UpdateModFileEndpoint = Endpoint<"/mod-file-update-groups/{group_id}/versions", "post", 201>;
 
 async function updateModFile(
   params: UpdateModFileEndpoint["params"] & UpdateModFileEndpoint["body"],
   api: ApiClient,
 ): Promise<UpdateModFileEndpoint["response"]> {
   const { group_id, ...body } = params;
-  const url = `/mod_files/update_groups/${group_id}/versions`;
+  const url = `/mod-file-update-groups/${group_id}/versions`;
   info(`Updating mod file at: ${url}`);
 
   const response = await api(url, {
