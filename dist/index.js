@@ -1,6 +1,6 @@
 import require$$0 from 'os';
 import require$$0$1 from 'crypto';
-import require$$1, { statSync, readFileSync } from 'fs';
+import require$$1, { statSync } from 'fs';
 import require$$1$5 from 'path';
 import require$$2 from 'http';
 import require$$3 from 'https';
@@ -27,6 +27,7 @@ import require$$6 from 'string_decoder';
 import require$$0$9 from 'diagnostics_channel';
 import require$$2$2 from 'child_process';
 import require$$6$1 from 'timers';
+import { open } from 'fs/promises';
 import process$1 from 'process';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -27262,18 +27263,18 @@ function createApiClient(apiKey) {
     };
 }
 async function getModFileDetails(params, api) {
-    const { file_id, game_domain } = params;
-    const url = `/games/${game_domain}/mod-files/${file_id}`;
+    const { game_scoped_id, game_domain } = params;
+    const url = `/games/${game_domain}/mod-files/${game_scoped_id}`;
     const response = await api(url);
     if (!response.ok) {
-        throw new Error(`Failed to get Mod file details: ${response.status} - ${await response.text()}`);
+        throw new Error(`Failed to get mod file details: ${response.status} - ${await response.text()}`);
     }
     return (await response.json());
 }
-async function requestUpload(params, api) {
+async function createMultipartUpload(params, api) {
     const { filename, size_bytes } = params;
-    const url = `/uploads`;
-    coreExports.info(`Requesting upload URL from: ${url}`);
+    const url = `/uploads/multipart`;
+    coreExports.info(`Requesting multipart upload from: ${url}`);
     const response = await api(url, {
         method: "POST",
         body: JSON.stringify({
@@ -27282,22 +27283,73 @@ async function requestUpload(params, api) {
         }),
     });
     if (!response.ok) {
-        throw new Error(`Failed to get upload URL: ${response.status} - ${await response.text()}`);
+        throw new Error(`Failed to create multipart upload: ${response.status} - ${await response.text()}`);
     }
     return (await response.json());
 }
-async function uploadFile(uploadUrl, filePath, fileSize) {
-    const fileBuffer = readFileSync(filePath);
-    const uploadRes = await fetch(uploadUrl, {
+async function uploadPart(fileHandle, partUrl, partNumber, totalParts, partSize) {
+    const buffer = Buffer.alloc(partSize);
+    const offset = (partNumber - 1) * partSize;
+    const { bytesRead } = await fileHandle.read(buffer, 0, partSize, offset);
+    const partData = bytesRead < partSize ? buffer.subarray(0, bytesRead) : buffer;
+    coreExports.info(`Uploading part ${partNumber}/${totalParts} (${bytesRead} bytes)`);
+    const response = await fetch(partUrl, {
         method: "PUT",
         headers: {
             "Content-Type": "application/octet-stream",
-            "Content-Length": String(fileSize),
+            "Content-Length": String(bytesRead),
         },
-        body: fileBuffer,
+        body: partData,
     });
-    if (!uploadRes.ok) {
-        throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
+    if (!response.ok) {
+        throw new Error(`Failed to upload part ${partNumber}: ${response.status} ${await response.text()}`);
+    }
+    const etag = response.headers.get("ETag");
+    if (!etag) {
+        throw new Error(`No ETag returned for part ${partNumber}`);
+    }
+    return { partNumber, etag: etag.replace(/"/g, "") };
+}
+const DEFAULT_CONCURRENCY = 6;
+async function uploadParts(filePath, partUrls, partSize, concurrency = DEFAULT_CONCURRENCY) {
+    const fileHandle = await open(filePath, "r");
+    const results = [];
+    const totalParts = partUrls.length;
+    try {
+        // Process parts in batches for controlled concurrency
+        for (let i = 0; i < totalParts; i += concurrency) {
+            const batch = partUrls.slice(i, i + concurrency);
+            const batchPromises = batch.map((url, batchIndex) => {
+                const partNumber = i + batchIndex + 1;
+                return uploadPart(fileHandle, url, partNumber, totalParts, partSize);
+            });
+            const batchResults = await Promise.all(batchPromises);
+            results.push(...batchResults);
+        }
+    }
+    finally {
+        await fileHandle.close();
+    }
+    return results;
+}
+function buildCompleteMultipartXml(parts) {
+    const partElements = parts
+        .map((p) => `  <Part>\n    <PartNumber>${p.partNumber}</PartNumber>\n    <ETag>${p.etag}</ETag>\n  </Part>`)
+        .join("\n");
+    return `<CompleteMultipartUpload>\n${partElements}\n</CompleteMultipartUpload>`;
+}
+async function completeMultipartUpload(completeUrl, parts) {
+    const xml = buildCompleteMultipartXml(parts);
+    coreExports.debug(`Completing multipart upload with XML:\n${xml}`);
+    const response = await fetch(completeUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/xml",
+        },
+        body: xml,
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to complete multipart upload: ${response.status} ${await response.text()}`);
     }
 }
 async function finaliseUpload(params, api) {
@@ -27350,7 +27402,7 @@ async function run() {
     try {
         const apiKey = coreExports.getInput("api_key", { required: true });
         const api = createApiClient(apiKey);
-        const fileID = parseInt(coreExports.getInput("file_id", { required: true }), 10);
+        const fileId = coreExports.getInput("file_id", { required: true });
         const gameDomain = coreExports.getInput("game_domain_name", { required: true });
         const filename = coreExports.getInput("filename", { required: true });
         const version = coreExports.getInput("version", { required: true });
@@ -27358,32 +27410,36 @@ async function run() {
         const fileCategory = (coreExports.getInput("file_category") || "main");
         const { size: fileSize } = statSync(filename);
         // Step 1: Get file group id from mod file details
-        const { update_group_version: { group_id = 0 } = {} } = await getModFileDetails({ game_domain: gameDomain, file_id: fileID }, api);
-        if (group_id == 0) {
-            throw new Error(`Mod file does not have a group_id`);
+        const modFileDetails = await getModFileDetails({ game_domain: gameDomain, game_scoped_id: fileId }, api);
+        const groupId = modFileDetails.update_group_version?.group_id;
+        if (!groupId) {
+            throw new Error(`Mod file does not have an update group`);
         }
-        coreExports.info(`Received update group version: ${group_id}`);
-        // Step 2: Request upload location
-        const { presigned_url, uuid } = await requestUpload({ size_bytes: fileSize, filename }, api);
-        coreExports.info(`Received upload UUID: ${uuid}`);
-        // Step 3: Upload file data
-        await uploadFile(presigned_url, filename, fileSize);
-        coreExports.info("File data uploaded successfully");
-        // Step 4: Finalise upload
-        const finaliseResult = await finaliseUpload({ id: uuid }, api);
-        coreExports.info(`Finalised upload: ${finaliseResult.uuid} (state: ${finaliseResult.state})`);
-        // Step 5: Poll until upload is available
-        await pollUploadState({ id: uuid }, api);
+        coreExports.info(`Found update group: ${groupId}`);
+        // Step 2: Create multipart upload
+        const { id: uploadId, parts_presigned_url, parts_size, complete_presigned_url } = await createMultipartUpload({ size_bytes: fileSize, filename }, api);
+        coreExports.info(`Created multipart upload: ${uploadId} (${parts_presigned_url.length} parts, ${parts_size} bytes each)`);
+        // Step 3: Upload all parts
+        const parts = await uploadParts(filename, parts_presigned_url, parts_size);
+        coreExports.info(`Uploaded ${parts.length} parts successfully`);
+        // Step 4: Complete multipart upload
+        await completeMultipartUpload(complete_presigned_url, parts);
+        coreExports.info("Multipart upload completed");
+        // Step 5: Finalise upload
+        const finaliseResult = await finaliseUpload({ id: uploadId }, api);
+        coreExports.info(`Finalised upload: ${finaliseResult.id} (state: ${finaliseResult.state})`);
+        // Step 6: Poll until upload is available
+        await pollUploadState({ id: uploadId }, api);
         coreExports.info("Upload is now available");
-        // Step 6: Update file (associate with mod)
-        const { uid: file_uid } = await updateModFile({
-            group_id: `${group_id}`,
-            upload_id: uuid,
+        // Step 7: Update file (associate with mod)
+        const { id: newFileId } = await updateModFile({
+            group_id: groupId,
+            upload_id: uploadId,
             name,
             version,
             file_category: fileCategory,
         }, api);
-        coreExports.setOutput("file_uid", file_uid);
+        coreExports.setOutput("file_uid", newFileId);
         coreExports.info("File updated successfully");
         coreExports.info("File uploaded successfully to NexusMods.");
     }
@@ -27396,7 +27452,7 @@ async function run() {
         }
     }
 }
-run();
 
 export { run };
+run();
 //# sourceMappingURL=index.js.map

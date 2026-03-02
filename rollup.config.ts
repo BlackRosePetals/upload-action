@@ -10,6 +10,7 @@ const config = {
     file: "dist/index.js",
     format: "es",
     sourcemap: true,
+    footer: "run();", // Call run() in bundle for GitHub Actions, but not in source for local-action
   },
   plugins: [typescript(), nodeResolve({ preferBuiltins: true }), commonjs(), json()],
 };
