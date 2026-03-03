@@ -4,6 +4,66 @@
  */
 
 export interface paths {
+    "/games/{game_domain}/mods/{game_scoped_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod
+         * @description Retrieve specified mod, from a specified game.
+         */
+        get: operations["getMod"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/games/{game_domain}/mod-files/{game_scoped_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod file
+         * @description Retrieve a specific file for a game.
+         */
+        get: operations["getModFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mods/{id}/file-update-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod file update groups
+         * @description Retrieve all file update groups for a given mod.
+         */
+        get: operations["getModFileUpdateGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{id}": {
         parameters: {
             query?: never;
@@ -174,213 +234,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/games/{game_domain}/mods/{mod_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get mod
-         * @description Retrieve specified mod, from a specified game.
-         */
-        get: operations["getMod"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/games/{game_domain}/mod-files/{file_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get mod file
-         * @description Retrieve a specific file for a game.
-         */
-        get: operations["getModFile"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        CreateModFileRequest: {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            upload_id: string;
-            /**
-             * @description Mod UID
-             *     * Use [get mod](#tag/mods/operation/getMod) to get the UID for a mod using the data from a site URL e.g.
-             *       `/skyrimspecialedition/mods/12604`.
-             */
-            mod_uid: string;
-            /** @description Mod file name */
-            name: string;
-            /** @description Mod file version */
-            version: string;
-            /** @description Description of the mod file */
-            description?: string | null;
-            /** @enum {string} */
-            file_category: "main" | "optional" | "miscellaneous";
-        };
-        CreateUploadRequest: {
-            /**
-             * Format: int64
-             * @description Size of file in bytes
-             */
-            size_bytes: number;
-            /** @description User-defined filename */
-            filename: string;
-        };
-        CreateUploadSuccess: {
-            /** @description Presigned URL */
-            presigned_url: string;
-        } & {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            uuid: string;
-            /** @description User ID */
-            user_id: number;
-            /** @enum {string} */
-            state: "created" | "available";
-        };
-        CreateMultipartUploadSuccess: {
-            /**
-             * Format: int64
-             * @description Size of each part in bytes
-             */
-            parts_size: number;
-            /** @description Presigned URLs for each upload part */
-            parts_presigned_url: string[];
-            /** @description Presigned URL to complete upload */
-            complete_presigned_url: string;
-        } & {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            uuid: string;
-            /** @description User ID */
-            user_id: number;
-            /** @enum {string} */
-            state: "created" | "available";
-        };
-        FinaliseUploadSuccess: {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            uuid: string;
-            /** @description User ID */
-            user_id: number;
-            /** @enum {string} */
-            state: "created" | "available";
-        };
-        GetUploadSuccess: {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            uuid: string;
-            /** @description User ID */
-            user_id: number;
-            /** @enum {string} */
-            state: "created" | "available";
-        };
-        CreateModFileSuccess: {
-            /**
-             * Format: uuid
-             * @description Mod file UID
-             */
-            uid: string;
-            /** @description Mod file ID, specific to each game (not the unique ID). */
-            id: number;
-            /** @description Mod file name */
-            name: string;
-            /** @enum {string} */
-            file_category: "main" | "optional" | "miscellaneous";
-        };
-        Upload: {
-            /**
-             * Format: uuid
-             * @description Upload ID
-             */
-            uuid: string;
-            /** @description User ID */
-            user_id: number;
-            /** @enum {string} */
-            state: "created" | "available";
-        };
-        ModFile: {
-            /**
-             * Format: uuid
-             * @description Mod file UID
-             */
-            uid: string;
-            /** @description Mod file ID, specific to each game (not the unique ID). */
-            id: number;
-            /** @description Mod file name */
-            name: string;
-            /** @enum {string} */
-            file_category: "main" | "optional" | "miscellaneous";
-        };
-        /** @enum {string} */
-        UploadState: "created" | "available";
-        /** @enum {string} */
-        ModFileCategory: "main" | "optional" | "miscellaneous";
-        CreateUpdateGroupVersionRequest: {
-            /**
-             * Format: uuid
-             * @description Upload ID.
-             */
-            upload_id: string;
-            /** @description Mod file name */
-            name: string;
-            /** @description Description of the mod file */
-            description?: string | null;
-            /** @description Mod file version */
-            version: string;
-            /** @enum {string} */
-            file_category: "main" | "optional" | "miscellaneous";
-        };
-        CreateUpdateGroupVersionSuccess: {
-            /**
-             * Format: uuid
-             * @description Mod file UID
-             */
-            uid: string;
-            /** @description Mod file ID, specific to each game (not the unique ID). */
-            id: number;
-            /** @description Mod file name */
-            name: string;
-            /** @enum {string} */
-            file_category: "main" | "optional" | "miscellaneous";
-        };
         BadRequest: {
             /** @description Error message */
             error: string;
             /** @description List of validation errors */
             details: string[];
         };
-        Forbidden: {
+        UnprocessableEntity: {
             /** @description Error message */
             error: string;
         };
@@ -388,77 +252,173 @@ export interface components {
             /** @description Error message */
             error: string;
         };
-        UnprocessableEntity: {
+        Forbidden: {
             /** @description Error message */
             error: string;
         };
-        GetModDetails: {
-            /** @description Unique identifier for the mod */
-            uid: string;
-            /** @description Mod ID (forms composite key with game) */
-            mod_id: number;
-            /** @description Game ID */
-            game_id: number;
-            /** @description Mod name (only shown if mod is available) */
-            name?: string | null;
+        /** @description An RFC 9457 Problem Details object. */
+        ProblemDetails: {
+            /**
+             * Format: uri
+             * @description A URI reference that identifies the problem type.
+             */
+            type: string;
+            /** @description A short, human-readable summary of the problem type. */
+            title: string;
+            /**
+             * @description The HTTP status code.
+             * @example 404
+             */
+            status: number;
+            /** @description A human-readable explanation specific to this occurrence of the problem. */
+            detail?: string;
+            /**
+             * Format: uri
+             * @description A URI reference that identifies the specific occurrence of the problem.
+             */
+            instance?: string;
         };
+        GetModDetails: components["schemas"]["Mod"];
         Mod: {
-            /** @description Unique identifier for the mod */
-            uid: string;
-            /** @description Mod ID (forms composite key with game) */
-            mod_id: number;
-            /** @description Game ID */
-            game_id: number;
-            /** @description Mod name (only shown if mod is available) */
+            /** @description The unique identifier for the mod. */
+            id: string;
+            /** @description The game-scoped identifier for the mod. */
+            game_scoped_id: string;
+            /** @description The unique identifier for game this mod belongs to. */
+            game_id: string;
+            /** @description Mod name (only shown if mod is available). */
             name?: string | null;
         };
-        GetModFileDetails: {
-            /** @description Unique identifier for the file */
-            uid: string;
-            /** @description File ID (forms composite key with game) */
-            file_id: number;
-            /** @description Game ID */
-            game_id: number;
-            /** @description Mod ID that this file belongs to */
-            mod_id: number;
-            update_group_version?: {
-                /**
-                 * Format: decimal
-                 * @description Position within the file update group
-                 */
-                position: string;
-                /** @description File update group ID */
-                group_id: number;
-            };
+        GetModFileDetails: components["schemas"]["ModFile"];
+        ModFile: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the mod file.
+             */
+            id: string;
+            /** @description The game-scoped identifier for the mod file. */
+            game_scoped_id: string;
+            /** @description Mod file name. */
+            name: string;
+            file_category: components["schemas"]["NewModFileCategory"];
         };
-        ModFile1: {
-            /** @description Unique identifier for the file */
-            uid: string;
-            /** @description File ID (forms composite key with game) */
-            file_id: number;
-            /** @description Game ID */
-            game_id: number;
-            /** @description Mod ID that this file belongs to */
-            mod_id: number;
-            update_group_version?: {
-                /**
-                 * Format: decimal
-                 * @description Position within the file update group
-                 */
-                position: string;
-                /** @description File update group ID */
-                group_id: number;
-            };
+        ModFileUpdateGroup: {
+            /** @description The unique identifier for the file update group. */
+            id: string;
+            /** @description The name of the file update group. */
+            name: string;
         };
         FileUpdateGroupVersion: {
             /**
              * Format: decimal
-             * @description Position within the file update group
+             * @description Position within the file update group.
              */
             position: string;
-            /** @description File update group ID */
-            group_id: number;
+            /** @description File update group ID. */
+            group_id: string;
         };
+        ModFilesWithDependencyCountsResponse: {
+            files: components["schemas"]["ModFileWithDependencyCount"][];
+        };
+        /** @description A mod file enriched with a dependency count. */
+        ModFileWithDependencyCount: components["schemas"]["MinimalModFile"] & {
+            /** @description The number of dependencies for this file. */
+            dependencies_count: number;
+        };
+        /** @description A minimal representation of a mod file. */
+        MinimalModFile: {
+            /** @description The unique identifier for the mod file. */
+            id: string;
+            /** @description The game-scoped identifier for the mod file. */
+            game_scoped_id: string;
+            /** @description The name of the mod file. */
+            name: string;
+            /** @description The version of the mod file. */
+            version: string;
+            category: components["schemas"]["ModFileCategory"];
+        };
+        /** @enum {string} */
+        ModFileCategory: "main" | "update" | "optional" | "old_version" | "miscellaneous" | "removed" | "archived";
+        ModFileUpdateGroupsResponse: {
+            groups: components["schemas"]["ModFileUpdateGroup"][];
+        };
+        CreateModFileRequest: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the upload.
+             */
+            upload_id: string;
+            /**
+             * @description The unique identifier for the mod this file belongs to.
+             *
+             *     * Use [get mod](#tag/mods/operation/getMod) to get the game scoped ID for a mod using the data from a site URL e.g.
+             *       `/skyrimspecialedition/mods/12604`.
+             */
+            mod_id: string;
+            /** @description Mod file name. */
+            name: string;
+            /** @description Mod file version. */
+            version: string;
+            /** @description Description of the mod file. */
+            description?: string | null;
+            file_category: components["schemas"]["NewModFileCategory"];
+        };
+        CreateUploadRequest: {
+            /**
+             * Format: int64
+             * @description Size of file in bytes.
+             */
+            size_bytes: number;
+            /** @description User-defined filename. */
+            filename: string;
+        };
+        CreateUploadSuccess: {
+            /** @description Presigned URL. */
+            presigned_url: string;
+        } & components["schemas"]["Upload"];
+        CreateMultipartUploadSuccess: {
+            /**
+             * Format: int64
+             * @description Size of each part in bytes.
+             */
+            parts_size: number;
+            /** @description Presigned URLs for each upload part. */
+            parts_presigned_url: string[];
+            /** @description Presigned URL to complete upload. */
+            complete_presigned_url: string;
+        } & components["schemas"]["Upload"];
+        FinaliseUploadSuccess: components["schemas"]["Upload"];
+        GetUploadSuccess: components["schemas"]["Upload"];
+        CreateModFileSuccess: components["schemas"]["ModFile"];
+        Upload: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the upload.
+             */
+            id: string;
+            /** @description The unique identifier for the user who belongs to this upload. */
+            user_id: string;
+            state: components["schemas"]["UploadState"];
+        };
+        /** @enum {string} */
+        UploadState: "created" | "available";
+        /** @enum {string} */
+        NewModFileCategory: "main" | "optional" | "miscellaneous";
+        CreateUpdateGroupVersionRequest: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the upload.
+             */
+            upload_id: string;
+            /** @description Mod file name */
+            name: string;
+            /** @description Description of the mod file */
+            description?: string | null;
+            /** @description Mod file version */
+            version: string;
+            file_category: components["schemas"]["NewModFileCategory"];
+        };
+        CreateUpdateGroupVersionSuccess: components["schemas"]["ModFile"];
     };
     responses: never;
     parameters: never;
@@ -468,518 +428,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Uploads UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Upload */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: uuid
-                         * @description Upload ID
-                         */
-                        uuid: string;
-                        /** @description User ID */
-                        user_id: number;
-                        /** @enum {string} */
-                        state: "created" | "available";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    createUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: int64
-                     * @description Size of file in bytes
-                     */
-                    size_bytes: number;
-                    /** @description User-defined filename */
-                    filename: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Upload UUID and presigned URL */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Presigned URL */
-                        presigned_url: string;
-                    } & {
-                        /**
-                         * Format: uuid
-                         * @description Upload ID
-                         */
-                        uuid: string;
-                        /** @description User ID */
-                        user_id: number;
-                        /** @enum {string} */
-                        state: "created" | "available";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    createMultipartUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: int64
-                     * @description Size of file in bytes
-                     */
-                    size_bytes: number;
-                    /** @description User-defined filename */
-                    filename: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Upload UUID and presigned URL */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: int64
-                         * @description Size of each part in bytes
-                         */
-                        parts_size: number;
-                        /** @description Presigned URLs for each upload part */
-                        parts_presigned_url: string[];
-                        /** @description Presigned URL to complete upload */
-                        complete_presigned_url: string;
-                    } & {
-                        /**
-                         * Format: uuid
-                         * @description Upload ID
-                         */
-                        uuid: string;
-                        /** @description User ID */
-                        user_id: number;
-                        /** @enum {string} */
-                        state: "created" | "available";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    finaliseUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Uploads UUID */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Upload */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: uuid
-                         * @description Upload ID
-                         */
-                        uuid: string;
-                        /** @description User ID */
-                        user_id: number;
-                        /** @enum {string} */
-                        state: "created" | "available";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    createModFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description Upload ID
-                     */
-                    upload_id: string;
-                    /**
-                     * @description Mod UID
-                     *     * Use [get mod](#tag/mods/operation/getMod) to get the UID for a mod using the data from a site URL e.g.
-                     *       `/skyrimspecialedition/mods/12604`.
-                     */
-                    mod_uid: string;
-                    /** @description Mod file name */
-                    name: string;
-                    /** @description Mod file version */
-                    version: string;
-                    /** @description Description of the mod file */
-                    description?: string | null;
-                    /** @enum {string} */
-                    file_category: "main" | "optional" | "miscellaneous";
-                };
-            };
-        };
-        responses: {
-            /** @description ModFile */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: uuid
-                         * @description Mod file UID
-                         */
-                        uid: string;
-                        /** @description Mod file ID, specific to each game (not the unique ID). */
-                        id: number;
-                        /** @description Mod file name */
-                        name: string;
-                        /** @enum {string} */
-                        file_category: "main" | "optional" | "miscellaneous";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Unprocessable Entity */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
-    createUpdateGroupVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Update Group ID */
-                group_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /**
-                     * Format: uuid
-                     * @description Upload ID.
-                     */
-                    upload_id: string;
-                    /** @description Mod file name */
-                    name: string;
-                    /** @description Description of the mod file */
-                    description?: string | null;
-                    /** @description Mod file version */
-                    version: string;
-                    /** @enum {string} */
-                    file_category: "main" | "optional" | "miscellaneous";
-                };
-            };
-        };
-        responses: {
-            /** @description UpdateGroupVersion */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * Format: uuid
-                         * @description Mod file UID
-                         */
-                        uid: string;
-                        /** @description Mod file ID, specific to each game (not the unique ID). */
-                        id: number;
-                        /** @description Mod file name */
-                        name: string;
-                        /** @enum {string} */
-                        file_category: "main" | "optional" | "miscellaneous";
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
-                };
-            };
-        };
-    };
     getMod: {
         parameters: {
             query?: never;
@@ -992,11 +440,11 @@ export interface operations {
                  */
                 game_domain: string;
                 /**
-                 * @description Mod ID, specific to each game (not the unique ID).
+                 * @description The game-scoped identifier for the mod.
                  *
                  *     This is the mod identifier which appears in URLs on the site e.g. `12604` from path `/skyrimspecialedition/mods/12604`.
                  */
-                mod_id: number;
+                game_scoped_id: string;
             };
             cookie?: never;
         };
@@ -1008,16 +456,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Unique identifier for the mod */
-                        uid: string;
-                        /** @description Mod ID (forms composite key with game) */
-                        mod_id: number;
-                        /** @description Game ID */
-                        game_id: number;
-                        /** @description Mod name (only shown if mod is available) */
-                        name?: string | null;
-                    };
+                    "application/json": components["schemas"]["GetModDetails"];
                 };
             };
             /** @description Bad Request */
@@ -1026,12 +465,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
+                    "application/json": components["schemas"]["BadRequest"];
                 };
             };
             /** @description Forbidden */
@@ -1040,10 +474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["Forbidden"];
                 };
             };
             /** @description Not Found */
@@ -1052,10 +483,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["NotFound"];
                 };
             };
         };
@@ -1071,8 +499,8 @@ export interface operations {
                  *     This is the human readable game name which appears in URLs on the site e.g. `skyrimspecialedition` and `fallout4`.
                  */
                 game_domain: string;
-                /** @description File ID, specific to each game (not the unique ID). */
-                file_id: number;
+                /** @description The game-scoped identifier for the mod file. */
+                game_scoped_id: string;
             };
             cookie?: never;
         };
@@ -1084,25 +512,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Unique identifier for the file */
-                        uid: string;
-                        /** @description File ID (forms composite key with game) */
-                        file_id: number;
-                        /** @description Game ID */
-                        game_id: number;
-                        /** @description Mod ID that this file belongs to */
-                        mod_id: number;
-                        update_group_version?: {
-                            /**
-                             * Format: decimal
-                             * @description Position within the file update group
-                             */
-                            position: string;
-                            /** @description File update group ID */
-                            group_id: number;
-                        };
-                    };
+                    "application/json": components["schemas"]["GetModFileDetails"];
                 };
             };
             /** @description Bad Request */
@@ -1111,12 +521,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                        /** @description List of validation errors */
-                        details: string[];
-                    };
+                    "application/json": components["schemas"]["BadRequest"];
                 };
             };
             /** @description Forbidden */
@@ -1125,10 +530,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["Forbidden"];
                 };
             };
             /** @description Not Found */
@@ -1137,10 +539,355 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description Error message */
-                        error: string;
-                    };
+                    "application/json": components["schemas"]["NotFound"];
+                };
+            };
+        };
+    };
+    getModFileUpdateGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the mod. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mod's file update groups. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModFileUpdateGroupsResponse"];
+                };
+            };
+            /** @description The mod was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the upload. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetUploadSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFound"];
+                };
+            };
+        };
+    };
+    createUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload ID and presigned URL */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateUploadSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprocessableEntity"];
+                };
+            };
+        };
+    };
+    createMultipartUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload ID and presigned URL */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateMultipartUploadSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+        };
+    };
+    finaliseUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the upload. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinaliseUploadSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFound"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprocessableEntity"];
+                };
+            };
+        };
+    };
+    createModFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateModFileRequest"];
+            };
+        };
+        responses: {
+            /** @description ModFile */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateModFileSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFound"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnprocessableEntity"];
+                };
+            };
+        };
+    };
+    createUpdateGroupVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the update group. */
+                group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateUpdateGroupVersionRequest"];
+            };
+        };
+        responses: {
+            /** @description UpdateGroupVersion */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateUpdateGroupVersionSuccess"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadRequest"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forbidden"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotFound"];
                 };
             };
         };

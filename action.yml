@@ -8,10 +8,10 @@ inputs:
     description: API key
     required: true
   file_id:
-    description: File ID on Nexus Mods
+    description: File ID on Nexus Mods (game-scoped identifier from the file URL)
     required: true
   game_domain_name:
-    description: Game Domain Name on Nexus Mods
+    description: Game Domain name on Nexus Mods (e.g., skyrimspecialedition)
     required: true
   filename:
     description: Name of the zip file to upload
@@ -19,8 +19,8 @@ inputs:
   version:
     description: Version string for the uploaded file (e.g., 1.0.0)
     required: true
-  fileCategory:
-    description: 'File category for the uploaded file (default: 1)'
+  file_category:
+    description: File category for the uploaded file
     required: false
     default: main
   display_name:
