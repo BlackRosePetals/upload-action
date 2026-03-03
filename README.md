@@ -18,6 +18,7 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 | filename         | Name of the zip file to upload                     | Yes      |          |
 | version          | Version string for the uploaded file (e.g., 1.0.0) | Yes      |          |
 | display_name     | Display name for the uploaded file                 | No       | filename |
+| description      | Description for the uploaded file                  | No       |          |
 | file_category    | File category for the uploaded file                | No       | main     |
 
 ## Outputs
