@@ -268,7 +268,7 @@ export async function run(): Promise<void> {
     const filename = getInput("filename", { required: true });
     const version = getInput("version", { required: true });
     const name = getInput("display_name") || path.basename(filename);
-    const description = getInput("description") || "";
+    const description = getInput("description") || undefined;
     const fileCategory = (getInput("file_category") || "main") as UpdateModFileEndpoint["body"]["file_category"];
 
     if (!existsSync(filename)) {
