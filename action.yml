@@ -16,6 +16,8 @@ inputs:
   filename:
     description: Name of the zip file to upload
     required: true
+  description:
+    description: Description for the uploaded file used on Nexus Mods
   version:
     description: Version string for the uploaded file (e.g., 1.0.0)
     required: true
