@@ -80,6 +80,16 @@ This is generated using openapi-typescript via the following command:
 
 `npm run openapi-spec`
 
+### Building
+
+Run the following command to compile the TypeScript source and bundle it into `dist/index.js`:
+
+```bash
+npm run build
+```
+
+This uses Rollup with the TypeScript plugin to produce a single minified ES module bundle. The `dist/` directory must be committed, as GitHub Actions runs the bundled output directly.
+
 ## License
 
 MIT
