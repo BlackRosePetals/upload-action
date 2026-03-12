@@ -29,35 +29,6 @@ function createApiClient(apiKey: string) {
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
-// The bundled OpenAPI spec is missing fields from the Mods spec's ModFile schema.
-// The actual API response includes update_group_version which we need.
-interface ModFileDetails {
-  id: string;
-  game_scoped_id: string;
-  game_id: string;
-  mod_game_scoped_id: string;
-  update_group_version?: {
-    position: string;
-    group_id: string;
-  };
-}
-
-async function getModFileDetails(
-  params: { game_domain: string; game_scoped_id: string },
-  api: ApiClient,
-): Promise<ModFileDetails> {
-  const { game_scoped_id, game_domain } = params;
-  const url = `/games/${game_domain}/mod-files/${game_scoped_id}`;
-
-  const response = await api(url);
-
-  if (!response.ok) {
-    throw new Error(`Failed to get mod file details: ${response.status} - ${await response.text()}`);
-  }
-
-  return (await response.json()) as ModFileDetails;
-}
-
 type CreateMultipartUploadEndpoint = Endpoint<"/uploads/multipart", "post", 201>;
 
 async function createMultipartUpload(
@@ -263,8 +234,7 @@ export async function run(): Promise<void> {
     const apiKey = getInput("api_key", { required: true });
     const api = createApiClient(apiKey);
 
-    const fileId = getInput("file_id", { required: true });
-    const gameDomain = getInput("game_domain_name", { required: true });
+    const groupId = getInput("file_group_id", { required: true });
     const filename = getInput("filename", { required: true });
     const version = getInput("version", { required: true });
     const name = getInput("display_name") || path.basename(filename);
@@ -276,38 +246,32 @@ export async function run(): Promise<void> {
     }
     const { size: fileSize } = statSync(filename);
 
-    // Step 1: Get file group id from mod file details
-    const modFileDetails = await getModFileDetails({ game_domain: gameDomain, game_scoped_id: fileId }, api);
-    const groupId = modFileDetails.update_group_version?.group_id;
-    if (!groupId) {
-      throw new Error(`Mod file does not have an update group`);
-    }
-    info(`Found update group: ${groupId}`);
-
-    // Step 2: Create multipart upload
-    const { id: uploadId, parts_presigned_url, parts_size, complete_presigned_url } = await createMultipartUpload(
-      { size_bytes: fileSize, filename },
-      api,
-    );
+    // Step 1: Create multipart upload
+    const {
+      id: uploadId,
+      parts_presigned_url,
+      parts_size,
+      complete_presigned_url,
+    } = await createMultipartUpload({ size_bytes: fileSize, filename }, api);
     info(`Created multipart upload: ${uploadId} (${parts_presigned_url.length} parts, ${parts_size} bytes each)`);
 
-    // Step 3: Upload all parts
+    // Step 2: Upload all parts
     const parts = await uploadParts(filename, parts_presigned_url, parts_size);
     info(`Uploaded ${parts.length} parts successfully`);
 
-    // Step 4: Complete multipart upload
+    // Step 3: Complete multipart upload
     await completeMultipartUpload(complete_presigned_url, parts);
     info("Multipart upload completed");
 
-    // Step 5: Finalise upload
+    // Step 4: Finalise upload
     const finaliseResult = await finaliseUpload({ id: uploadId }, api);
     info(`Finalised upload: ${finaliseResult.id} (state: ${finaliseResult.state})`);
 
-    // Step 6: Poll until upload is available
+    // Step 5: Poll until upload is available
     await pollUploadState({ id: uploadId }, api);
     info("Upload is now available");
 
-    // Step 7: Update file (associate with mod)
+    // Step 6: Update file (associate with mod)
     const { id: newFileId } = await updateModFile(
       {
         group_id: groupId,
