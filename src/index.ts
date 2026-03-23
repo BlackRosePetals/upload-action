@@ -191,11 +191,11 @@ async function pollUploadState(
       throw new Error(`Failed to get upload state: ${response.status} - ${await response.text()}`);
     }
 
-    const data = (await response.json()) as GetUploadEndpoint["response"];
+    const { data } = (await response.json()) as GetUploadEndpoint["response"];
     info(`Polling upload ${id}: state = ${data.state}`);
 
     if (data.state === "available") {
-      return data;
+      return { data };
     }
 
     const delay = Math.min(pollIntervalMs * Math.pow(1.5, attempt), 30000);
@@ -248,10 +248,7 @@ export async function run(): Promise<void> {
 
     // Step 1: Create multipart upload
     const {
-      id: uploadId,
-      parts_presigned_url,
-      parts_size,
-      complete_presigned_url,
+      data: { id: uploadId, parts_presigned_url, parts_size, complete_presigned_url },
     } = await createMultipartUpload({ size_bytes: fileSize, filename }, api);
     info(`Created multipart upload: ${uploadId} (${parts_presigned_url.length} parts, ${parts_size} bytes each)`);
 
@@ -264,7 +261,7 @@ export async function run(): Promise<void> {
     info("Multipart upload completed");
 
     // Step 4: Finalise upload
-    const finaliseResult = await finaliseUpload({ id: uploadId }, api);
+    const { data: finaliseResult } = await finaliseUpload({ id: uploadId }, api);
     info(`Finalised upload: ${finaliseResult.id} (state: ${finaliseResult.state})`);
 
     // Step 5: Poll until upload is available
@@ -272,7 +269,9 @@ export async function run(): Promise<void> {
     info("Upload is now available");
 
     // Step 6: Update file (associate with mod)
-    const { id: newFileId } = await updateModFile(
+    const {
+      data: { id: newFileId },
+    } = await updateModFile(
       {
         group_id: groupId,
         upload_id: uploadId,
