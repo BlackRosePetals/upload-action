@@ -10,15 +10,15 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 
 ## Inputs
 
-| Name          | Description                                        | Required | Default  |
-| ------------- | -------------------------------------------------- | -------- | -------- |
-| api_key       | API key                                            | Yes      |          |
-| file_group_id | Group ID of the file (See [How to find the group ID](#how-to-find-the-group-id))                              | Yes      |          |
-| filename      | Name of the zip file to upload                     | Yes      |          |
-| version       | Version string for the uploaded file (e.g., 1.0.0) | Yes      |          |
-| display_name  | Display name for the uploaded file                 | No       | filename |
-| description   | Description for the uploaded file                  | No       |          |
-| file_category | File category for the uploaded file                | No       | main     |
+| Name          | Description                                                                      | Required | Default  |
+| ------------- | -------------------------------------------------------------------------------- | -------- | -------- |
+| api_key       | [API key](https://www.nexusmods.com/settings/api-keys)                           | Yes      |          |
+| file_group_id | Group ID of the file (See [How to find the group ID](#how-to-find-the-group-id)) | Yes      |          |
+| filename      | Name of the zip file to upload                                                   | Yes      |          |
+| version       | Version string for the uploaded file (e.g., 1.0.0)                               | Yes      |          |
+| display_name  | Display name for the uploaded file                                               | No       | filename |
+| description   | Description for the uploaded file                                                | No       |          |
+| file_category | File category for the uploaded file                                              | No       | main     |
 
 ## Outputs
 
@@ -47,7 +47,8 @@ First, use another action to create a zip file. Then, use this action to upload 
 ```
 
 ## How to find the group ID
-To get a group ID to use in this action, you need to have created a mod page on Nexus Mods and uploaded at least one file. The group ID can be found by checking the "API Info" option in [the Files tab of the public-facing mod page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-254743025.png), or in the [edit drop-down of the Manage Files page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-1413688991.png). 
+
+To get a group ID to use in this action, you need to have created a mod page on Nexus Mods and uploaded at least one file. The group ID can be found by checking the "API Info" option in [the Files tab of the public-facing mod page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-254743025.png), or in the [edit drop-down of the Manage Files page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-1413688991.png).
 
 ## Development
 

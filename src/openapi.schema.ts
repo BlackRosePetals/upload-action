@@ -64,6 +64,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mod-file-update-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a file update group
+         * @description Updates the name of an existing file update group by its ID.
+         */
+        put: operations["updateModFileUpdateGroup"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mod-files/{id}/dependencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod file dependencies
+         * @description Retrieve all dependencies for a given mod file.
+         */
+        get: operations["getModFileDependencies"];
+        /**
+         * Update mod file dependencies
+         * @description Replace all dependencies for a given mod file. Each dependency contains
+         *     an array of candidate file IDs. Candidates within the same dependency
+         *     represent alternatives (OR). Separate dependencies are independent
+         *     requirements (AND).
+         */
+        put: operations["setModFileDependencies"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads/{id}": {
         parameters: {
             query?: never;
@@ -192,6 +239,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a collection
+         * @description Creates a collection and claims an upload using the upload_id from a finalised [upload session](#tag/uploads/operation/createUpload).
+         */
+        post: operations["createCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a collection revision
+         * @description Creates a collection revision claims an upload using the upload_id from a finalised [upload session](#tag/uploads/operation/createUpload).
+         */
+        post: operations["createCollectionRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mod-files": {
         parameters: {
             query?: never;
@@ -238,24 +325,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        BadRequest: {
-            /** @description Error message */
-            error: string;
-            /** @description List of validation errors */
-            details: string[];
-        };
-        UnprocessableEntity: {
-            /** @description Error message */
-            error: string;
-        };
-        NotFound: {
-            /** @description Error message */
-            error: string;
-        };
-        Forbidden: {
-            /** @description Error message */
-            error: string;
-        };
         /** @description An RFC 9457 Problem Details object. */
         ProblemDetails: {
             /**
@@ -271,12 +340,27 @@ export interface components {
              */
             status: number;
             /** @description A human-readable explanation specific to this occurrence of the problem. */
-            detail?: string;
+            detail: string;
             /**
              * Format: uri
              * @description A URI reference that identifies the specific occurrence of the problem.
              */
-            instance?: string;
+            instance: string;
+        };
+        /** @description RFC 9457 Problem Details extended with validation errors. */
+        ValidationProblem: components["schemas"]["ProblemDetails"] & {
+            /** @description List of validation errors. */
+            errors: components["schemas"]["ValidationProblemItem"][];
+        };
+        /** @description A single validation error with a JSON pointer to the problematic field. */
+        ValidationProblemItem: {
+            /** @description Human-readable description of the validation error. */
+            detail: string;
+            /**
+             * @description A JSON Pointer (RFC 6901) to the field that caused the error.
+             * @example /collection_data/collection_manifest/mods/0/source/mod_id
+             */
+            pointer: string;
         };
         GetModDetails: components["schemas"]["Mod"];
         Mod: {
@@ -302,11 +386,21 @@ export interface components {
             name: string;
             file_category: components["schemas"]["NewModFileCategory"];
         };
+        /** @description A file update group enriched with aggregate stats across its versions. */
         ModFileUpdateGroup: {
             /** @description The unique identifier for the file update group. */
-            id: string;
+            readonly id: string;
             /** @description The name of the file update group. */
             name: string;
+            /** @description True if the group contains at least one version/file with an active category (main, update, optional, or miscellaneous). */
+            is_active: boolean;
+            /**
+             * Format: date-time
+             * @description The most recent file upload date across all versions in the group. Null if the group has no files.
+             */
+            last_file_uploaded_at: string | null;
+            /** @description The total number of versions (files) in the group. */
+            versions_count: number;
         };
         FileUpdateGroupVersion: {
             /**
@@ -336,11 +430,80 @@ export interface components {
             /** @description The version of the mod file. */
             version: string;
             category: components["schemas"]["ModFileCategory"];
+            /**
+             * Format: date-time
+             * @description The date and time the file was uploaded.
+             */
+            uploaded_at: string;
         };
         /** @enum {string} */
-        ModFileCategory: "main" | "update" | "optional" | "old_version" | "miscellaneous" | "removed" | "archived";
+        ModFileCategory: "main" | "update" | "optional" | "old_version" | "miscellaneous" | "removed" | "archived" | "unknown";
         ModFileUpdateGroupsResponse: {
             groups: components["schemas"]["ModFileUpdateGroup"][];
+        };
+        FileUpdateGroupVersionsResponse: {
+            versions: components["schemas"]["FileUpdateGroupVersionWithFile"][];
+        };
+        FileUpdateGroupVersionWithFile: {
+            /** @description The unique identifier for the file update group version. */
+            id: string;
+            /**
+             * Format: decimal
+             * @description Position within the file update group.
+             */
+            position: string;
+            file: components["schemas"]["MinimalModFile"];
+        };
+        ModFileDependenciesResponse: {
+            dependencies: components["schemas"]["ModFileDependency"][];
+        };
+        ModFileDependency: {
+            candidates: components["schemas"]["DependencyCandidateUpdateGroup"][];
+        };
+        /** @description A file update group with its associated mod and versions. */
+        DependencyCandidateUpdateGroup: {
+            /** @description The unique identifier for the file update group. */
+            id: string;
+            /** @description The name of the file update group. */
+            name: string;
+            mod: components["schemas"]["MinimalMod"];
+            candidate_versions: components["schemas"]["FileUpdateGroupVersionWithFile"][];
+        };
+        /** @description A minimal representation of a mod. */
+        MinimalMod: {
+            /** @description The unique identifier for the mod. */
+            id: string;
+            /** @description The game-scoped identifier for the mod. */
+            game_scoped_id: string;
+            /** @description The name of the mod. */
+            name: string;
+            game: components["schemas"]["MinimalGame"];
+        };
+        /** @description A minimal representation of a game. */
+        MinimalGame: {
+            /** @description The unique identifier for the game. */
+            id: string;
+            /** @description The name of the game. */
+            name: string;
+            /**
+             * @description The URL-friendly slug for the game.
+             * @example skyrimspecialedition
+             */
+            domain_name: string;
+        };
+        ModFileDependencyDefinition: {
+            /** @description The file IDs of the candidate files for this dependency. Multiple candidates represent alternatives (OR). */
+            candidate_file_ids: string[];
+        };
+        UpdateModFileDependenciesRequest: {
+            dependencies: components["schemas"]["ModFileDependencyDefinition"][];
+        };
+        UpdateModFileUpdateGroupRequest: {
+            /** @description The name of the file update group. */
+            name: string;
+        };
+        UpdateModFileUpdateGroupResponse: {
+            data: components["schemas"]["ModFileUpdateGroup"];
         };
         CreateModFileRequest: {
             /**
@@ -419,6 +582,110 @@ export interface components {
             file_category: components["schemas"]["NewModFileCategory"];
         };
         CreateUpdateGroupVersionSuccess: components["schemas"]["ModFile"];
+        CreateCollectionRequest: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the upload to claim against this new collection.
+             */
+            upload_id: string;
+            collection_data: components["schemas"]["CollectionPayload"];
+        };
+        CreateCollectionSuccess: {
+            /** @description The unique identifier for the collection. */
+            id: string;
+            /** @description The unique identifier for the initial collection revision. */
+            revision_id: string;
+        };
+        CreateCollectionRevisionRequest: {
+            /**
+             * Format: uuid
+             * @description The unique identifier for the upload to claim against this new collection.
+             */
+            upload_id: string;
+            collection_data: components["schemas"]["CollectionPayload"];
+        };
+        CreateCollectionRevisionSuccess: {
+            /** @description The unique identifier for the revision. */
+            id: string;
+            /** @description The unique identifier for the collection this revision belongs to. */
+            collection_id: string;
+        };
+        /** @description The data payload used to create a collection revision. */
+        CollectionPayload: {
+            /** @description Whether the collection includes adult content. */
+            adult_content: boolean;
+            collection_manifest: components["schemas"]["CollectionManifest"];
+            /** @description Collection schema id. */
+            collection_schema_id: number;
+        };
+        /** @description The JSON manifest that defines a collection. */
+        CollectionManifest: {
+            info: components["schemas"]["CollectionManifestInfo"];
+            /** @description List of mod resources for the manifest. */
+            mods: components["schemas"]["CollectionManifestMod"][];
+        };
+        /** @description The info section of the JSON manifest. */
+        CollectionManifestInfo: {
+            /** @description The collection author's name. */
+            author: string;
+            /** @description The url of the author's profile. */
+            author_url?: string | null;
+            /** @description The name of the collection. */
+            name: string;
+            /** @description A description of the collection. */
+            description?: string | null;
+            /** @description A short summary of the collection. */
+            summary?: string | null;
+            /** @description The domain name of the game. */
+            domain_name: string;
+            /** @description A list of game versions that this revision has been tested with. */
+            game_versions?: string[] | null;
+        };
+        /** @description Defines a mod to be used in a collection as part of the manifest. */
+        CollectionManifestMod: {
+            /** @description The name of the mod. */
+            name: string;
+            /** @description The mod version. */
+            version: string;
+            /** @description Whether the mod is required for this collection. */
+            optional: boolean;
+            /** @description The domain name of the game for the mod. */
+            domain_name: string;
+            source: components["schemas"]["CollectionManifestModSource"];
+            /** @description The name of the mod author. */
+            author?: string | null;
+        };
+        /** @description Source information for a mod (nexus or other) as part of the manifest. */
+        CollectionManifestModSource: {
+            type: components["schemas"]["ModSource"];
+            /** @description The identifier of the mod source for this collection manifest. */
+            mod_id?: string;
+            /** @description The identifier of the file associated with the mod in this collection manifest. */
+            file_id?: string;
+            /** @description An MD5 hash of the file for verification. */
+            md5?: string | null;
+            /** @description The file size in kb. */
+            file_size?: number | null;
+            update_policy?: components["schemas"]["UpdatePolicy"];
+            /** @description Logical file name of the mod resource. */
+            logical_filename?: string | null;
+            /** @description File expression of the mod resource. */
+            file_expression?: string | null;
+            /** @description The direct url of the file. */
+            url?: string | null;
+            /** @description Does the mod include adult content. */
+            adult_content?: boolean | null;
+        };
+        /**
+         * @description Used to define the source of a mod. Useful for informing Collections how to retrieve mods.
+         * @enum {string}
+         */
+        ModSource: "nexus" | "direct" | "browse" | "manual" | "bundle";
+        /**
+         * @description Available update policies of a file resource
+         * @enum {string}
+         */
+        UpdatePolicy: "exact" | "latest" | "prefer";
     };
     responses: never;
     parameters: never;
@@ -456,7 +723,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetModDetails"];
+                    "application/json": {
+                        data: components["schemas"]["GetModDetails"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -465,7 +734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -474,7 +743,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -483,7 +752,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -512,7 +781,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetModFileDetails"];
+                    "application/json": {
+                        data: components["schemas"]["GetModFileDetails"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -521,7 +792,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -530,7 +801,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -539,7 +810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -562,7 +833,18 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ModFileUpdateGroupsResponse"];
+                    "application/json": {
+                        data: components["schemas"]["ModFileUpdateGroupsResponse"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description The mod was not found. */
@@ -571,7 +853,168 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProblemDetails"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    updateModFileUpdateGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier of the file update group to update. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description The new data for the file update group. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateModFileUpdateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successfully updated the file update group. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The mod file update group was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getModFileDependencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the mod file. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mod file's dependencies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ModFileDependenciesResponse"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The mod file was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    setModFileDependencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the mod file (i.e. the file to create dependencies for). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateModFileDependenciesRequest"];
+            };
+        };
+        responses: {
+            /** @description The mod file's updated dependencies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ModFileDependenciesResponse"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The mod file was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -594,7 +1037,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GetUploadSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["GetUploadSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -603,7 +1048,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -612,7 +1057,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -621,7 +1066,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -645,7 +1090,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreateUploadSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["CreateUploadSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -654,7 +1101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -663,7 +1110,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Unprocessable Entity */
@@ -672,7 +1119,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UnprocessableEntity"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -696,7 +1143,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreateMultipartUploadSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["CreateMultipartUploadSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -705,7 +1154,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -714,7 +1163,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -737,7 +1195,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FinaliseUploadSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["FinaliseUploadSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -746,7 +1206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -755,7 +1215,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -764,7 +1224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Unprocessable Entity */
@@ -773,7 +1233,134 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UnprocessableEntity"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    createCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCollectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreateCollectionSuccess"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"] | components["schemas"]["ValidationProblem"];
+                };
+            };
+        };
+    };
+    createCollectionRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the collection this revision will belong to. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCollectionRevisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Upload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CreateCollectionRevisionSuccess"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"] | components["schemas"]["ValidationProblem"];
                 };
             };
         };
@@ -797,7 +1384,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreateModFileSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["CreateModFileSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -806,7 +1395,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -815,7 +1404,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -824,7 +1413,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Unprocessable Entity */
@@ -833,7 +1422,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UnprocessableEntity"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -860,7 +1449,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CreateUpdateGroupVersionSuccess"];
+                    "application/json": {
+                        data: components["schemas"]["CreateUpdateGroupVersionSuccess"];
+                    };
                 };
             };
             /** @description Bad Request */
@@ -869,7 +1460,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BadRequest"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -878,7 +1469,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Forbidden"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Not Found */
@@ -887,7 +1478,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NotFound"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
