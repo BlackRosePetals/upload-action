@@ -48,7 +48,7 @@ First, use another action to create a zip file. Then, use this action to upload 
 
 ## How to find the group ID
 
-To get a group ID to use in this action, you need to have created a mod page on Nexus Mods and uploaded at least one file. The group ID can be found by checking the "API Info" option in [the Files tab of the public-facing mod page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-254743025.png), or in the [edit drop-down of the Manage Files page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-1413688991.png).
+To get a group ID to use in this action, you need to have created a mod page on Nexus Mods and uploaded at least one file. The group ID can be found by checking the "API Info" option in [the Files tab of the public-facing mod page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1773850631-254743025.png), or in the [edit menu of the Manage Files page](https://staticdelivery.nexusmods.com/mods/2295/images/26/26-1775133874-1209377152.png).
 
 ## Development
 
