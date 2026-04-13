@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/mod-files/{id}/dependencies": {
+    "/mod-files/{id}/dependencies/ranges": {
         parameters: {
             query?: never;
             header?: never;
@@ -92,19 +92,118 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get mod file dependencies
-         * @description Retrieve all dependencies for a given mod file.
+         * Get mod file dependency ranges
+         * @description Retrieve dependency ranges for a given mod file. Each dependency definition
+         *     contains a set of version ranges within update groups that satisfy the dependency.
          */
-        get: operations["getModFileDependencies"];
+        get: operations["getModFileDependencyRanges"];
         /**
-         * Update mod file dependencies
-         * @description Replace all dependencies for a given mod file. Each dependency contains
-         *     an array of candidate file IDs. Candidates within the same dependency
-         *     represent alternatives (OR). Separate dependencies are independent
-         *     requirements (AND).
+         * Update mod file dependency ranges
+         * @description Replace all dependency range definitions for a given mod file. Each
+         *     dependency definition contains an array of version ranges. Ranges
+         *     within the same definition represent alternatives (OR). Separate
+         *     definitions are independent requirements (AND).
+         *
+         *     A range is defined by a min_version_id (required) and an optional
+         *     max_version_id. Both must refer to versions within the same file
+         *     update group. When max_version_id is null the range is open-ended
+         *     (no upper bound).
          */
-        put: operations["setModFileDependencies"];
+        put: operations["setModFileDependencyRanges"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mod-files/{id}/dependencies/materialized": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get mod file materialized dependencies
+         * @description Retrieve materialized dependencies for a given mod file. Resolves the
+         *     stored dependency ranges into concrete candidate files grouped by update
+         *     group.
+         */
+        get: operations["getModFileDependencyMaterialized"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/file-update-groups/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get file update group versions
+         * @description Retrieve all versions for a given file update group.
+         */
+        get: operations["getFileUpdateGroupVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mod-file-update-group-versions/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move multiple file update group versions
+         * @description Moves one or more file update group versions to a new position relative to
+         *     another version, which may be in a different group.
+         *
+         *     Versions are inserted in the order given by `version_ids`.
+         *     `version_ids` is expected to be ordered from earliest to latest version.
+         *
+         *     **Example:** Given an update group with versions `[v1.0.0, v1.1.0, v2.0.0]`
+         *     (earliest to latest), moving `[v1.0.1, v1.0.2]` with `relative_placement: "after"`
+         *     targeting `v1.0.0` produces `[v1.0.0, v1.0.1, v1.0.2, v1.1.0, v2.0.0]`.
+         */
+        post: operations["moveFileUpdateGroupVersions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mod-file-update-group-versions/move-to-new-group": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move multiple file update group versions into a new file update group
+         * @description Moves one or more file update group versions into a new file update group with the specified name.
+         *
+         *     Versions are inserted in the order given by `version_ids`.
+         *     `version_ids` is expected to be ordered from earliest to latest version.
+         */
+        post: operations["moveFileUpdateGroupVersionsToNewGroup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -180,8 +279,8 @@ export interface paths {
          *     ### Next steps
          *     Multipart upload uses the [Amazon S3 multipart upload specification](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html).
          *
-         *     * Call `PUT` with your file data to each `parts_presigned_url`.
-         *        * Each part must be `parts_size` bytes, apart from the final part which may be smaller.
+         *     * Call `PUT` with your file data to each `part_presigned_urls`.
+         *        * Each part must be `part_size_bytes` bytes, apart from the final part which may be smaller.
          *        * Retrieve the `ETag` response header value from each part upload.
          *     * Once all parts are uploaded, call `POST` to the `complete presigned_url` with [XML post data](#multipart-resources) describing
          *       the `ETag` for each part.
@@ -375,23 +474,25 @@ export interface components {
         };
         GetModFileDetails: components["schemas"]["ModFile"];
         ModFile: {
-            /**
-             * Format: uuid
-             * @description The unique identifier for the mod file.
-             */
+            /** @description The unique identifier for the mod file. */
             id: string;
             /** @description The game-scoped identifier for the mod file. */
             game_scoped_id: string;
-            /** @description Mod file name. */
-            name: string;
-            file_category: components["schemas"]["NewModFileCategory"];
+            /** @description The unique identifier for the game this mod file belongs to. */
+            game_id: string;
+            /** @description The game-scoped identifier for the mod this mod file belongs to. */
+            mod_game_scoped_id: string;
+            update_group_version: components["schemas"]["ModFileUpdateGroupVersion"];
         };
-        /** @description A file update group enriched with aggregate stats across its versions. */
+        /** @description A file update group. */
         ModFileUpdateGroup: {
             /** @description The unique identifier for the file update group. */
             readonly id: string;
             /** @description The name of the file update group. */
             name: string;
+        };
+        /** @description A file update group enriched with aggregate stats across its versions. */
+        ModFileUpdateGroupWithAggregates: components["schemas"]["ModFileUpdateGroup"] & {
             /** @description True if the group contains at least one version/file with an active category (main, update, optional, or miscellaneous). */
             is_active: boolean;
             /**
@@ -401,8 +502,16 @@ export interface components {
             last_file_uploaded_at: string | null;
             /** @description The total number of versions (files) in the group. */
             versions_count: number;
+            /** @description The number of archived versions (files) in the group. */
+            archived_count: number;
+            /** @description The number of removed versions (files) in the group. */
+            removed_count: number;
         };
-        FileUpdateGroupVersion: {
+        /** @description A file update group with its associated mod. */
+        ModFileUpdateGroupWithMod: components["schemas"]["ModFileUpdateGroup"] & {
+            mod: components["schemas"]["MinimalMod"];
+        };
+        ModFileUpdateGroupVersion: {
             /**
              * Format: decimal
              * @description Position within the file update group.
@@ -410,14 +519,6 @@ export interface components {
             position: string;
             /** @description File update group ID. */
             group_id: string;
-        };
-        ModFilesWithDependencyCountsResponse: {
-            files: components["schemas"]["ModFileWithDependencyCount"][];
-        };
-        /** @description A mod file enriched with a dependency count. */
-        ModFileWithDependencyCount: components["schemas"]["MinimalModFile"] & {
-            /** @description The number of dependencies for this file. */
-            dependencies_count: number;
         };
         /** @description A minimal representation of a mod file. */
         MinimalModFile: {
@@ -439,12 +540,12 @@ export interface components {
         /** @enum {string} */
         ModFileCategory: "main" | "update" | "optional" | "old_version" | "miscellaneous" | "removed" | "archived" | "unknown";
         ModFileUpdateGroupsResponse: {
-            groups: components["schemas"]["ModFileUpdateGroup"][];
+            groups: components["schemas"]["ModFileUpdateGroupWithAggregates"][];
         };
-        FileUpdateGroupVersionsResponse: {
-            versions: components["schemas"]["FileUpdateGroupVersionWithFile"][];
+        ModFileUpdateGroupVersionsResponse: {
+            versions: components["schemas"]["ModFileUpdateGroupVersionWithFile"][];
         };
-        FileUpdateGroupVersionWithFile: {
+        ModFileUpdateGroupVersionWithFile: {
             /** @description The unique identifier for the file update group version. */
             id: string;
             /**
@@ -454,11 +555,9 @@ export interface components {
             position: string;
             file: components["schemas"]["MinimalModFile"];
         };
-        ModFileDependenciesResponse: {
-            dependencies: components["schemas"]["ModFileDependency"][];
-        };
-        ModFileDependency: {
-            candidates: components["schemas"]["DependencyCandidateUpdateGroup"][];
+        /** @description A file update group version with its file and parent group. */
+        ModFileUpdateGroupVersionWithFileAndGroup: components["schemas"]["ModFileUpdateGroupVersionWithFile"] & {
+            group: components["schemas"]["ModFileUpdateGroup"];
         };
         /** @description A file update group with its associated mod and versions. */
         DependencyCandidateUpdateGroup: {
@@ -467,7 +566,7 @@ export interface components {
             /** @description The name of the file update group. */
             name: string;
             mod: components["schemas"]["MinimalMod"];
-            candidate_versions: components["schemas"]["FileUpdateGroupVersionWithFile"][];
+            candidate_versions: components["schemas"]["ModFileUpdateGroupVersionWithFile"][];
         };
         /** @description A minimal representation of a mod. */
         MinimalMod: {
@@ -478,7 +577,17 @@ export interface components {
             /** @description The name of the mod. */
             name: string;
             game: components["schemas"]["MinimalGame"];
+            /** @description The URL of the mod's thumbnail image. */
+            thumbnail_url?: string | null;
+            status?: components["schemas"]["ModStatus"];
+            /** @description Whether the mod is marked as adult content. */
+            adult_content?: boolean | null;
         };
+        /**
+         * @description The effective visibility status of a mod.
+         * @enum {string}
+         */
+        ModStatus: "published" | "not_published" | "hidden" | "under_moderation" | "removed" | "removed_by_staff";
         /** @description A minimal representation of a game. */
         MinimalGame: {
             /** @description The unique identifier for the game. */
@@ -491,19 +600,105 @@ export interface components {
              */
             domain_name: string;
         };
-        ModFileDependencyDefinition: {
-            /** @description The file IDs of the candidate files for this dependency. Multiple candidates represent alternatives (OR). */
-            candidate_file_ids: string[];
+        UpdateModFileDependencyRangesRequest: {
+            dependency_definitions: components["schemas"]["ModFileDependencyRangeDefinitionInput"][];
         };
-        UpdateModFileDependenciesRequest: {
-            dependencies: components["schemas"]["ModFileDependencyDefinition"][];
+        ModFileDependencyRangeDefinitionInput: {
+            ranges: components["schemas"]["ModFileDependencyRangeInput"][];
+        };
+        ModFileDependencyRangeInput: {
+            /** @description The ID of the file update group version representing the lower bound of the range. */
+            min_version_id: string;
+            /** @description The ID of the file update group version representing the upper bound of the range. Null means open-ended (no upper bound). */
+            max_version_id?: string | null;
         };
         UpdateModFileUpdateGroupRequest: {
             /** @description The name of the file update group. */
             name: string;
         };
-        UpdateModFileUpdateGroupResponse: {
-            data: components["schemas"]["ModFileUpdateGroup"];
+        MoveFileUpdateGroupVersionsRequest: {
+            /**
+             * @description The unique identifiers for the file update group versions to move.
+             *     Versions are inserted in this order, and `version_ids` is expected to be ordered from earliest to latest version.
+             */
+            version_ids: string[];
+            target: components["schemas"]["MoveToPosition"];
+        };
+        /** @description Place the moved versions earlier (`before`) or later (`after`) with respect to the target version. */
+        MoveToPosition: {
+            /** @description The unique identifier of the version to position relative to. */
+            target_version_id: string;
+            relative_placement: components["schemas"]["RelativePlacement"];
+        };
+        /**
+         * @description `before`: earlier than the target. `after`: later than the target.
+         * @enum {string}
+         */
+        RelativePlacement: "before" | "after";
+        /** @description The result of a bulk move operation. */
+        MoveFileUpdateGroupVersionsResponse: {
+            /** @description The updated versions reflecting their new group and order. */
+            versions: components["schemas"]["ModFileUpdateGroupVersionWithFile"][];
+            /**
+             * @description A list of source groups that had versions removed but still contain
+             *     other versions.
+             */
+            modified_source_groups?: components["schemas"]["ModFileUpdateGroupWithAggregates"][];
+            /**
+             * @description A list of IDs for any source groups that were automatically deleted
+             *     because they became empty as a result of this move.
+             */
+            deleted_source_group_ids?: string[];
+            target_group: components["schemas"]["ModFileUpdateGroupWithAggregates"];
+        };
+        MoveFileUpdateGroupVersionsToNewGroupRequest: {
+            /**
+             * @description The unique identifiers for the file update group versions to move.
+             *     Versions are inserted in this order, and `version_ids` is expected to be ordered from earliest to latest version.
+             */
+            version_ids: string[];
+            /** @description The name of the new file update group. */
+            group_name: string;
+        };
+        /** @description The result of a bulk move operation. */
+        MoveFileUpdateGroupVersionsToNewGroupResponse: {
+            /** @description The updated versions reflecting their new group and order. */
+            versions: components["schemas"]["ModFileUpdateGroupVersionWithFile"][];
+            /**
+             * @description A list of source groups that had versions removed but still contain
+             *     other versions.
+             */
+            modified_source_groups?: components["schemas"]["ModFileUpdateGroupWithAggregates"][];
+            /**
+             * @description A list of IDs for any source groups that were automatically deleted
+             *     because they became empty as a result of this move.
+             */
+            deleted_source_group_ids?: string[];
+            new_group: components["schemas"]["ModFileUpdateGroupWithAggregates"];
+        };
+        ModFileDependencyRangesResponse: {
+            dependency_definitions: components["schemas"]["ModFileDependencyDefinitionWithRanges"][];
+        };
+        ModFileDependencyDefinitionWithRanges: {
+            /** @description The unique identifier for the dependency definition. */
+            id: string;
+            ranges: components["schemas"]["ModFileDependencyRange"][];
+        };
+        ModFileDependencyRange: {
+            /** @description The unique identifier for the dependency range. */
+            id: string;
+            target_group: components["schemas"]["ModFileUpdateGroupWithMod"];
+            min_version: components["schemas"]["ModFileUpdateGroupVersionWithFileAndGroup"];
+            max_version: components["schemas"]["ModFileUpdateGroupVersionWithFileAndGroup"] | null;
+        };
+        ModFileDependencyMaterializedResponse: {
+            dependencies: components["schemas"]["MaterializedDependency"][];
+        };
+        /** @description A materialized dependency definition with its resolved candidate groups and versions. */
+        MaterializedDependency: {
+            /** @description The unique identifier for the dependency definition. */
+            id: string;
+            candidate_groups: components["schemas"]["DependencyCandidateUpdateGroup"][];
         };
         CreateModFileRequest: {
             /**
@@ -544,24 +739,52 @@ export interface components {
              * Format: int64
              * @description Size of each part in bytes.
              */
-            parts_size: number;
+            part_size_bytes: number;
             /** @description Presigned URLs for each upload part. */
-            parts_presigned_url: string[];
+            part_presigned_urls: string[];
             /** @description Presigned URL to complete upload. */
             complete_presigned_url: string;
+            /**
+             * Format: int64
+             * @deprecated
+             * @description DEPRECATED: Use `part_size_bytes` instead. Size of each part in bytes.
+             */
+            parts_size?: number;
+            /**
+             * @deprecated
+             * @description DEPRECATED: Use `part_presigned_urls` instead. Presigned URLs for each upload part.
+             */
+            parts_presigned_url?: string[];
         } & components["schemas"]["Upload"];
         FinaliseUploadSuccess: components["schemas"]["Upload"];
         GetUploadSuccess: components["schemas"]["Upload"];
-        CreateModFileSuccess: components["schemas"]["ModFile"];
+        CreateModFileSuccess: components["schemas"]["UploadModFile"];
         Upload: {
             /**
              * Format: uuid
              * @description The unique identifier for the upload.
              */
             id: string;
-            /** @description The unique identifier for the user who belongs to this upload. */
-            user_id: string;
+            user: components["schemas"]["UploadUser"];
             state: components["schemas"]["UploadState"];
+            /**
+             * @deprecated
+             * @description DEPRECATED: Use `user.id` instead. The unique identifier for the user who owns this upload.
+             */
+            user_id?: string;
+        };
+        UploadUser: {
+            /** @description The unique identifier for the user who owns this upload. */
+            id: string;
+        };
+        UploadModFile: {
+            /** @description The unique identifier for the mod file. */
+            id: string;
+            /** @description The game-scoped identifier for the mod file. */
+            game_scoped_id: string;
+            /** @description Mod file name. */
+            name: string;
+            file_category: components["schemas"]["NewModFileCategory"];
         };
         /** @enum {string} */
         UploadState: "created" | "available";
@@ -581,7 +804,7 @@ export interface components {
             version: string;
             file_category: components["schemas"]["NewModFileCategory"];
         };
-        CreateUpdateGroupVersionSuccess: components["schemas"]["ModFile"];
+        CreateUpdateGroupVersionSuccess: components["schemas"]["UploadModFile"];
         CreateCollectionRequest: {
             /**
              * Format: uuid
@@ -593,8 +816,13 @@ export interface components {
         CreateCollectionSuccess: {
             /** @description The unique identifier for the collection. */
             id: string;
+            /** @description The slug for the collection. */
+            slug: string;
             /** @description The unique identifier for the initial collection revision. */
             revision_id: string;
+            /** @description The revision number. */
+            revision_number: number;
+            revision_status: components["schemas"]["RevisionStatus"];
         };
         CreateCollectionRevisionRequest: {
             /**
@@ -681,6 +909,11 @@ export interface components {
          * @enum {string}
          */
         ModSource: "nexus" | "direct" | "browse" | "manual" | "bundle";
+        /**
+         * @description The status of a collection revision.
+         * @enum {string}
+         */
+        RevisionStatus: "draft" | "published" | "retracted";
         /**
          * @description Available update policies of a file resource
          * @enum {string}
@@ -847,6 +1080,15 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemDetails"];
                 };
             };
+            /** @description Access to the mod is forbidden. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
             /** @description The mod was not found. */
             404: {
                 headers: {
@@ -911,7 +1153,7 @@ export interface operations {
             };
         };
     };
-    getModFileDependencies: {
+    getModFileDependencyRanges: {
         parameters: {
             query?: never;
             header?: never;
@@ -923,62 +1165,13 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The mod file's dependencies. */
+            /** @description The mod file's dependency ranges. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        data: components["schemas"]["ModFileDependenciesResponse"];
-                    };
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description The mod file was not found. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-        };
-    };
-    setModFileDependencies: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The unique identifier for the mod file (i.e. the file to create dependencies for). */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateModFileDependenciesRequest"];
-            };
-        };
-        responses: {
-            /** @description The mod file's updated dependencies. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["ModFileDependenciesResponse"];
-                    };
+                    "application/json": components["schemas"]["ModFileDependencyRangesResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1000,6 +1193,280 @@ export interface operations {
                 };
             };
             /** @description The mod file was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    setModFileDependencyRanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the mod file (i.e. the file to create dependency ranges for). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateModFileDependencyRangesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successfully updated the mod file dependency ranges. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The mod file was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getModFileDependencyMaterialized: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the mod file. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mod file's materialized dependencies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModFileDependencyMaterializedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The mod file was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    getFileUpdateGroupVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The unique identifier for the file update group. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file update group's versions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ModFileUpdateGroupVersionsResponse"];
+                    };
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The file update group was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    moveFileUpdateGroupVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveFileUpdateGroupVersionsRequest"];
+            };
+        };
+        responses: {
+            /** @description The versions were moved successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveFileUpdateGroupVersionsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The file update group was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The request body failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    moveFileUpdateGroupVersionsToNewGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveFileUpdateGroupVersionsToNewGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description The new group was created, and the versions were moved successfully. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoveFileUpdateGroupVersionsToNewGroupResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description The file update group was not found. */
             404: {
                 headers: {
                     [name: string]: unknown;
