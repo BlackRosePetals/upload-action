@@ -248,12 +248,12 @@ export async function run(): Promise<void> {
 
     // Step 1: Create multipart upload
     const {
-      data: { id: uploadId, parts_presigned_url, parts_size, complete_presigned_url },
+      data: { id: uploadId, part_presigned_urls, part_size_bytes, complete_presigned_url },
     } = await createMultipartUpload({ size_bytes: fileSize, filename }, api);
-    info(`Created multipart upload: ${uploadId} (${parts_presigned_url.length} parts, ${parts_size} bytes each)`);
+    info(`Created multipart upload: ${uploadId} (${part_presigned_urls.length} parts, ${part_size_bytes} bytes each)`);
 
     // Step 2: Upload all parts
-    const parts = await uploadParts(filename, parts_presigned_url, parts_size);
+    const parts = await uploadParts(filename, part_presigned_urls, part_size_bytes);
     info(`Uploaded ${parts.length} parts successfully`);
 
     // Step 3: Complete multipart upload
