@@ -25,6 +25,10 @@ inputs:
   display_name:
     description: The display name for the uploaded file, defaults to the file name
     required: false
+  archive_existing_file:
+    description: Archive the existing file when uploading a new version
+    required: false
+    default: 'false'
 outputs:
   file_uid:
     description: The UID of the uploaded file on Nexus Mods

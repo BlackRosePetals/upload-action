@@ -1,4 +1,4 @@
-import { getInput, info, debug, setFailed, setOutput } from "@actions/core";
+import { getInput, getBooleanInput, info, debug, setFailed, setOutput } from "@actions/core";
 import { existsSync, statSync } from "fs";
 import { open } from "fs/promises";
 import process from "process";
@@ -240,6 +240,7 @@ export async function run(): Promise<void> {
     const name = getInput("display_name") || path.basename(filename);
     const description = getInput("description") || undefined;
     const fileCategory = (getInput("file_category") || "main") as UpdateModFileEndpoint["body"]["file_category"];
+    const archiveExistingFile = getBooleanInput("archive_existing_file");
 
     if (!existsSync(filename)) {
       throw new Error(`File not found: ${filename}`);
@@ -279,6 +280,7 @@ export async function run(): Promise<void> {
         description,
         version,
         file_category: fileCategory,
+        archive_existing_file: archiveExistingFile,
       },
       api,
     );

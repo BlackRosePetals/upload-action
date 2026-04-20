@@ -536,6 +536,8 @@ export interface components {
              * @description The date and time the file was uploaded.
              */
             uploaded_at: string;
+            /** @description Whether this file is the primary file for the mod. The primary file represents the default download file for a mod page. There can be at most one primary file per mod. Defaults to false if omitted. */
+            is_primary?: boolean;
         };
         /** @enum {string} */
         ModFileCategory: "main" | "update" | "optional" | "old_version" | "miscellaneous" | "removed" | "archived" | "unknown";
@@ -720,6 +722,21 @@ export interface components {
             /** @description Description of the mod file. */
             description?: string | null;
             file_category: components["schemas"]["NewModFileCategory"];
+            /**
+             * @description Whether this file is the default download for mod managers.
+             * @default false
+             */
+            primary_mod_manager_download: boolean;
+            /**
+             * @description Whether mod manager downloads are enabled for this file.
+             * @default true
+             */
+            allow_mod_manager_download: boolean;
+            /**
+             * @description Whether to show a requirements popup when downloading this file.
+             * @default false
+             */
+            show_requirements_pop_up: boolean;
         };
         CreateUploadRequest: {
             /**
@@ -744,17 +761,6 @@ export interface components {
             part_presigned_urls: string[];
             /** @description Presigned URL to complete upload. */
             complete_presigned_url: string;
-            /**
-             * Format: int64
-             * @deprecated
-             * @description DEPRECATED: Use `part_size_bytes` instead. Size of each part in bytes.
-             */
-            parts_size?: number;
-            /**
-             * @deprecated
-             * @description DEPRECATED: Use `part_presigned_urls` instead. Presigned URLs for each upload part.
-             */
-            parts_presigned_url?: string[];
         } & components["schemas"]["Upload"];
         FinaliseUploadSuccess: components["schemas"]["Upload"];
         GetUploadSuccess: components["schemas"]["Upload"];
@@ -767,11 +773,6 @@ export interface components {
             id: string;
             user: components["schemas"]["UploadUser"];
             state: components["schemas"]["UploadState"];
-            /**
-             * @deprecated
-             * @description DEPRECATED: Use `user.id` instead. The unique identifier for the user who owns this upload.
-             */
-            user_id?: string;
         };
         UploadUser: {
             /** @description The unique identifier for the user who owns this upload. */
@@ -803,6 +804,17 @@ export interface components {
             /** @description Mod file version */
             version: string;
             file_category: components["schemas"]["NewModFileCategory"];
+            /** @description Whether this file is the default download for mod managers. */
+            primary_mod_manager_download?: boolean;
+            /** @description Whether mod manager downloads are enabled for this file. */
+            allow_mod_manager_download?: boolean;
+            /** @description Whether to show a requirements popup when downloading this file. */
+            show_requirements_pop_up?: boolean;
+            /**
+             * @description Whether to archive the existing file when uploading a new version.
+             * @default false
+             */
+            archive_existing_file: boolean;
         };
         CreateUpdateGroupVersionSuccess: components["schemas"]["UploadModFile"];
         CreateCollectionRequest: {
@@ -837,6 +849,9 @@ export interface components {
             id: string;
             /** @description The unique identifier for the collection this revision belongs to. */
             collection_id: string;
+            /** @description The revision number. */
+            revision_number: number;
+            revision_status: components["schemas"]["RevisionStatus"];
         };
         /** @description The data payload used to create a collection revision. */
         CollectionPayload: {
