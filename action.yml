@@ -29,6 +29,15 @@ inputs:
     description: Archive the existing file when uploading a new version
     required: false
     default: 'false'
+  primary_mod_manager_download:
+    description: Whether this file is the default download for mod managers
+    required: false
+  allow_mod_manager_download:
+    description: Whether mod manager downloads are enabled for this file
+    required: false
+  show_requirements_pop_up:
+    description: Whether to show a requirements popup when downloading this file
+    required: false
 outputs:
   file_uid:
     description: The UID of the uploaded file on Nexus Mods

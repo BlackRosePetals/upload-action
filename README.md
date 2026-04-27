@@ -10,16 +10,19 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 
 ## Inputs
 
-| Name                  | Description                                                                      | Required | Default  |
-| --------------------- | -------------------------------------------------------------------------------- | -------- | -------- |
-| api_key               | [API key](https://www.nexusmods.com/settings/api-keys)                           | Yes      |          |
-| file_group_id         | Group ID of the file (See [How to find the group ID](#how-to-find-the-group-id)) | Yes      |          |
-| filename              | Name of the zip file to upload                                                   | Yes      |          |
-| version               | Version string for the uploaded file (e.g., 1.0.0)                               | Yes      |          |
-| display_name          | Display name for the uploaded file                                               | No       | filename |
-| description           | Description for the uploaded file                                                | No       |          |
-| file_category         | File category for the uploaded file                                              | No       | main     |
-| archive_existing_file | Archive the existing file when uploading a new version                           | No       | false    |
+| Name                         | Description                                                                      | Required | Default  |
+| ---------------------------- | -------------------------------------------------------------------------------- | -------- | -------- |
+| api_key                      | [API key](https://www.nexusmods.com/settings/api-keys)                           | Yes      |          |
+| file_group_id                | Group ID of the file (See [How to find the group ID](#how-to-find-the-group-id)) | Yes      |          |
+| filename                     | Name of the zip file to upload                                                   | Yes      |          |
+| version                      | Version string for the uploaded file (e.g., 1.0.0)                               | Yes      |          |
+| display_name                 | Display name for the uploaded file                                               | No       | filename |
+| description                  | Description for the uploaded file                                                | No       |          |
+| file_category                | File category for the uploaded file                                              | No       | main     |
+| archive_existing_file        | Archive the existing file when uploading a new version                           | No       | false    |
+| primary_mod_manager_download | Whether this file is the default download for mod managers                       | No       |          |
+| allow_mod_manager_download   | Whether mod manager downloads are enabled for this file                          | No       |          |
+| show_requirements_pop_up     | Whether to show a requirements popup when downloading this file                  | No       |          |
 
 ## Outputs
 
@@ -72,6 +75,9 @@ Optional environment variables:
 - `INPUT_DESCRIPTION`
 - `INPUT_FILE_CATEGORY`
 - `INPUT_ARCHIVE_EXISTING_FILE`
+- `INPUT_PRIMARY_MOD_MANAGER_DOWNLOAD`
+- `INPUT_ALLOW_MOD_MANAGER_DOWNLOAD`
+- `INPUT_SHOW_REQUIREMENTS_POP_UP`
 - `NEXUSMODS_API_BASE` - Override the API base URL (defaults to `https://api.nexusmods.com/v3`)
 - `ACTIONS_STEP_DEBUG=true` - Enable debug output
 
