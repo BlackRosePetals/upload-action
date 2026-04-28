@@ -227,6 +227,12 @@ async function updateModFile(
   return (await response.json()) as UpdateModFileEndpoint["response"];
 }
 
+function getOptionalBooleanInput(name: string): boolean | undefined {
+  const value = getInput(name);
+  if (value === "") return undefined;
+  return getBooleanInput(name);
+}
+
 export async function run(): Promise<void> {
   info("Starting NexusMods upload action");
 
@@ -241,6 +247,9 @@ export async function run(): Promise<void> {
     const description = getInput("description") || undefined;
     const fileCategory = (getInput("file_category") || "main") as UpdateModFileEndpoint["body"]["file_category"];
     const archiveExistingFile = getBooleanInput("archive_existing_file");
+    const primaryModManagerDownload = getOptionalBooleanInput("primary_mod_manager_download");
+    const allowModManagerDownload = getOptionalBooleanInput("allow_mod_manager_download");
+    const showRequirementsPopup = getOptionalBooleanInput("show_requirements_pop_up");
 
     if (!existsSync(filename)) {
       throw new Error(`File not found: ${filename}`);
@@ -281,6 +290,9 @@ export async function run(): Promise<void> {
         version,
         file_category: fileCategory,
         archive_existing_file: archiveExistingFile,
+        primary_mod_manager_download: primaryModManagerDownload,
+        allow_mod_manager_download: allowModManagerDownload,
+        show_requirements_pop_up: showRequirementsPopup,
       },
       api,
     );
