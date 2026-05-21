@@ -20,9 +20,9 @@ This GitHub Action uploads a file to NexusMods using the NexusMods v3 API. It is
 | description                  | Description for the uploaded file                                                | No       |          |
 | file_category                | File category for the uploaded file                                              | No       | main     |
 | archive_existing_file        | Archive the existing file when uploading a new version                           | No       | false    |
-| primary_mod_manager_download | Whether this file is the default download for mod managers                       | No       |          |
-| allow_mod_manager_download   | Whether mod manager downloads are enabled for this file                          | No       |          |
-| show_requirements_pop_up     | Whether to show a requirements popup when downloading this file                  | No       |          |
+| primary_mod_manager_download | Whether this file is the default download for mod managers                       | No       | false    |
+| allow_mod_manager_download   | Whether mod manager downloads are enabled for this file                          | No       | true     |
+| show_requirements_pop_up     | Whether to show a requirements popup when downloading this file                  | No       | false    |
 
 ## Outputs
 
